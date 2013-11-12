@@ -1,13 +1,9 @@
 '''
-    
+    Create the MainWindow for the application, it contains ui and action
 '''
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import QVariant
 #from actions import *
-'''
-    Create the MainWindow for the application, it contains ui and action
-'''
-
 import qrc_app
 
 
@@ -28,7 +24,6 @@ class MainWindow(QtGui.QMainWindow):
         
         self.setWindowTitle("Gui_SM")
         
-        self.newLetter()
         self.setUnifiedTitleAndToolBarOnMac(True)
      
     def closeEvent(self, event):
