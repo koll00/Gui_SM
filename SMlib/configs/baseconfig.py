@@ -10,9 +10,9 @@ sip API incompatibility issue in SMlib's non-gui modules)
 from __future__ import print_function
 
 import os.path as osp
-import os
-import sys
-sys.path.append('..\\..\\')
+import sys,os 
+sys.path.append('..'+ os.path.sep + '...' + os.path.sep)
+
 from SMlib.configs import __version__
 
 

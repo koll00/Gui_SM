@@ -8,8 +8,8 @@ management features based on ``ConfigParser`` (standard Python library).
 
 from __future__ import print_function
 
-import sys
-sys.path.append("..\\..\\")
+import sys,os 
+sys.path.append('..'+ os.path.sep + '...' + os.path.sep)
 
 from SMlib.configs import __version__
 __license__ = __doc__

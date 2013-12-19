@@ -1,8 +1,8 @@
 '''
 '''
 
-import sys
-sys.path.append('..\\')
+import sys,os 
+sys.path.append('..'+ os.path.sep)
 
 from SMlib import SMGui as app
 

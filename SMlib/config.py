@@ -5,9 +5,9 @@ it can be used to quickly load a user config file
 """
 
 
-import os
-import sys
-sys.path.append("..\\")
+import sys,os 
+sys.path.append('..'+ os.path.sep)
+
 import os.path as osp
 from SMlib.configs import __version__
 
@@ -28,3 +28,4 @@ CONF = UserConfig('SMGui', defaults=DEFAULTS, load=True, version= __version__,
                   subfolder=SUBFOLDER, backup=True, raw_mode=True)
 if __name__ == "__main__":
     print SUBFOLDER
+    
