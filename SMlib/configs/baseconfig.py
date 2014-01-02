@@ -11,7 +11,7 @@ from __future__ import print_function
 
 import os.path as osp
 import sys,os 
-sys.path.append('..'+ os.path.sep + '...' + os.path.sep)
+sys.path.append('..'+ os.path.sep + '..' + os.path.sep)
 
 from SMlib.configs import __version__
 
@@ -56,6 +56,48 @@ if TEST is None:
 else:
     SUBFOLDER = 'SMGui_test'
 
+def get_conf_path(filename=None):
+    """Return absolute path for configuration file with specified filename"""
+    if TEST is None:
+        from spyderlib import userconfig
+        conf_dir = osp.join(userconfig.get_home_dir(), SUBFOLDER)
+    else:
+         import tempfile
+         conf_dir = osp.join(tempfile.gettempdir(), SUBFOLDER)
+    if not osp.isdir(conf_dir):
+        os.mkdir(conf_dir)
+    if filename is None:
+        return conf_dir
+    else:
+        return osp.join(conf_dir, filename)
+        
+
+def get_module_path(modname):
+    """Return module *modname* base path"""
+    return osp.abspath(osp.dirname(sys.modules[modname].__file__))
+
+
+def get_module_data_path(modname, relpath=None, attr_name='DATAPATH'):
+    """Return module *modname* data path
+    Note: relpath is ignored if module has an attribute named *attr_name*
+    
+    Handles py2exe/cx_Freeze distributions"""
+    datapath = getattr(sys.modules[modname], attr_name, '')
+    if datapath:
+        return datapath
+    else:
+        datapath = get_module_path(modname)
+        parentdir = osp.join(datapath, osp.pardir)
+        if osp.isfile(parentdir):
+            # Parent directory is not a directory but the 'library.zip' file:
+            # this is either a py2exe or a cx_Freeze distribution
+            datapath = osp.abspath(osp.join(osp.join(parentdir, osp.pardir),
+                                            modname))
+        if relpath is not None:
+            datapath = osp.abspath(osp.join(datapath, relpath))
+        return datapath
+
+
 # Variable explorer display / check all elements data types for sequences:
 # (when saving the variable explorer contents, check_all is True,
 #  see widgets/externalshell/namespacebrowser.py:NamespaceBrowser.save_data)
@@ -65,3 +107,68 @@ EXCLUDED_NAMES = ['nan', 'inf', 'infty', 'little_endian', 'colorbar_doc',
                   'typecodes', '__builtins__', '__main__', '__doc__', 'NaN',
                   'Inf', 'Infinity', 'sctypes', 'rcParams', 'rcParamsDefault',
                   'sctypeNA', 'typeNA', 'False_', 'True_',]
+
+#==============================================================================
+# Image path list
+#==============================================================================
+
+IMG_PATH = []
+def add_image_path(path):
+    if not osp.isdir(path):
+        return
+    global IMG_PATH
+    IMG_PATH.append(path)
+    for _root, dirs, _files in os.walk(path):
+        for dir in dirs:
+            IMG_PATH.append(osp.join(path, dir))
+
+
+add_image_path(get_module_data_path('SMlib', relpath='images'))
+
+def get_image_path(name, default="not_found.png"):
+    """Return image absolute path"""
+    for img_path in IMG_PATH:
+        full_path = osp.join(img_path, name)
+        if osp.isfile(full_path):
+            return osp.abspath(full_path)
+    if default is not None:
+        #return osp.abspath(osp.join(img_path, default))
+        return osp.abspath(osp.join(name, default))
+
+#==============================================================================
+# Translations
+#==============================================================================
+def get_translation(modname, dirname=None):
+    """Return translation callback for module *modname*"""
+    if dirname is None:
+        dirname = modname
+    locale_path = get_module_data_path(dirname, relpath="locale",
+                                       attr_name='LOCALEPATH')
+    # fixup environment var LANG in case it's unknown
+    if "LANG" not in os.environ:
+        import locale
+        lang = locale.getdefaultlocale()[0]
+        if lang is not None:
+            os.environ["LANG"] = lang
+    import gettext
+    try:
+        _trans = gettext.translation(modname, locale_path, codeset="utf-8")
+        lgettext = _trans.lgettext
+        def translate_gettext(x):
+            if isinstance(x, unicode):
+                x = x.encode("utf-8")
+            return unicode(lgettext(x), "utf-8")
+        return translate_gettext
+    except IOError, _e:  # analysis:ignore
+        #print "Not using translations (%s)" % _e
+        def translate_dumb(x):
+            if not isinstance(x, unicode):
+                return unicode(x, "utf-8")
+            return x
+        return translate_dumb
+
+# Translation callback
+_ = get_translation("SMlib")
+
+if __name__ == '__main__':
+    add_image_path(get_module_data_path('SMlib', relpath='icons'))
