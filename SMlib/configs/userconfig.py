@@ -154,7 +154,7 @@ class UserConfig(cp.ConfigParser):
         # See Issue 1086 and 1242 for background on why this
         # method contains all the exception handling.
         fname = self.filename()
-
+        
         def _write_file(fname):
             if PY2:
                 # Python 2
@@ -166,6 +166,7 @@ class UserConfig(cp.ConfigParser):
                     self.write(configfile)
 
         try: # the "easy" way
+            
             _write_file(fname)
         except IOError:
             try: # the "delete and sleep" way
