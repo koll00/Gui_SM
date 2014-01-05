@@ -1,15 +1,15 @@
 import sys, os 
 sys.path.append('..' + os.path.sep)
 
-from PyQt4.QtGui import QMainWindow, QApplication, QAction
+from PyQt4.QtGui import QMainWindow, QApplication, QAction,QDockWidget, QShortcut, QMenu
 from PyQt4 import QtGui, QtCore
 from PyQt4.Qt import QKeySequence
-from PyQt4.QtCore import SIGNAL, Qt, QSize, QPoint
+from PyQt4.QtCore import SIGNAL, Qt, QSize, QPoint,QByteArray
 import qrc_app
 
 from SMlib.configs.baseconfig import debug_print, _
 from SMlib.configs.userconfig import NoDefault 
-from SMlib.configs.guiconfig import get_shortcut
+from SMlib.configs.guiconfig import get_shortcut, remove_deprecated_shortcuts
 from SMlib.config import CONF
 from SMlib.py3compat import qbytearray_to_str
 from SMlib.configs.baseconfig import debug_print
@@ -19,7 +19,8 @@ from SMlib.utils.qthelpers import (create_action, add_actions, get_icon,
                                        create_bookmark_action,
                                        create_program_action, DialogManager,
                                        keybinding, qapplication,
-                                       create_python_script_action, file_uri)
+                                       create_python_script_action, file_uri, from_qvariant)
+#from SMlib.plugins.ipythonConsole import IPythonConsole
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -131,7 +132,8 @@ class MainWindow(QMainWindow):
         self.createToolBars()
         self.createStatusBar()
         # self.initalStatus()
-        
+#         self.ipyconsole = IPythonConsole(self)
+#         self.ipyconsole.register_plugin()
         # Window set-up
         self.debug_print("Setting up window...")
         self.setup_layout(default=False)
@@ -141,6 +143,69 @@ class MainWindow(QMainWindow):
 #                 self, shortcut=QtGui.QKeySequence.New,
 #                 statusTip="Create a new file", triggered=self.newFile)
         # self.debug_print("  ..core action")
+        self.close_dockwidget_action = create_action(self,
+                                        _("Close current dockwidget"),
+                                        triggered=self.close_current_dockwidget,
+                                        context=Qt.ApplicationShortcut)
+        self.register_shortcut(self.close_dockwidget_action,
+                                   "_", "Close dockwidget", "Shift+Ctrl+F4")
+            
+        _text = _("&Find text")
+        self.find_action = create_action(self, _text, icon='find.png',
+                                             tip=_text, triggered=self.find,
+                                             context=Qt.WidgetShortcut)
+        self.register_shortcut(self.find_action, "Editor",
+                                   "Find text", "Ctrl+F")
+        self.find_next_action = create_action(self, _("Find &next"),
+                  icon='findnext.png', triggered=self.find_next,
+                  context=Qt.WidgetShortcut)
+        self.register_shortcut(self.find_next_action, "Editor",
+                                   "Find next", "F3")
+        self.find_previous_action = create_action(self,
+                        _("Find &previous"),
+                        icon='findprevious.png', triggered=self.find_previous,
+                        context=Qt.WidgetShortcut)
+        self.register_shortcut(self.find_previous_action, "Editor",
+                                   "Find previous", "Shift+F3")
+        _text = _("&Replace text")
+        self.replace_action = create_action(self, _text, icon='replace.png',
+                                            tip=_text, triggered=self.replace,
+                                            context=Qt.WidgetShortcut)
+        self.register_shortcut(self.replace_action, "Editor",
+                                   "Replace text", "Ctrl+H")
+        def create_edit_action(text, tr_text, icon_name):
+            textseq = text.split(' ')
+            method_name = textseq[0].lower()+"".join(textseq[1:])
+            return create_action(self, tr_text,
+                                     shortcut=keybinding(text.replace(' ', '')),
+                                     icon=get_icon(icon_name),
+                                     triggered=self.global_callback,
+                                     data=method_name,
+                                     context=Qt.WidgetShortcut)
+        self.undo_action = create_edit_action("Undo", _("Undo"),
+                                                  'undo.png')
+        self.redo_action = create_edit_action("Redo", _("Redo"), 'redo.png')
+        self.copy_action = create_edit_action("Copy", _("Copy"),
+                                                  'editcopy.png')
+        self.cut_action = create_edit_action("Cut", _("Cut"), 'editcut.png')
+        self.paste_action = create_edit_action("Paste", _("Paste"),
+                                                   'editpaste.png')
+        self.delete_action = create_edit_action("Delete", _("Delete"),
+                                                    'editdelete.png')
+        self.selectall_action = create_edit_action("Select All",
+                                                       _("Select All"),
+                                                       'selectall.png')
+        self.edit_menu_actions = [self.undo_action, self.redo_action,
+                                      None, self.cut_action, self.copy_action,
+                                      self.paste_action, self.delete_action,
+                                      None, self.selectall_action]
+        self.search_menu_actions = [self.find_action, self.find_next_action,
+                                        self.find_previous_action,
+                                        self.replace_action]
+        self.search_toolbar_actions = [self.find_action,
+                                           self.find_next_action,
+                                           self.replace_action]
+        '''    
         self.open_action = QtGui.QAction(QtGui.QIcon(':/icons/open.png'),
                 "&Open...", self, shortcut=QtGui.QKeySequence.Open,
                 statusTip="Open an existing file", triggered=self.open)
@@ -164,10 +229,23 @@ class MainWindow(QMainWindow):
                 statusTip="Paste the clipboard's contents into the current selection",
                 triggered=self.paste)
         
-        self.undo_action = QtGui.QAction(QtGui.QIcon(':/icons/undo.png'),
-                                         "&Undo", self, shortcut="Ctrl+Z",
-                                         statusTip="undo the operation",
-                                         triggered=self.undo)
+#         self.undo_action = QtGui.QAction(QtGui.QIcon(':/icons/undo.png'),
+#                                          "&Undo", self, shortcut="Ctrl+Z",
+#                                          statusTip="undo the operation",
+#                                          triggered=self.undo)
+
+        def create_edit_action(text, tr_text, icon_name):
+                textseq = text.split(' ')
+                method_name = textseq[0].lower()+"".join(textseq[1:])
+                return create_action(self, tr_text,
+                                     shortcut=keybinding(text.replace(' ', '')),
+                                     icon=get_icon(icon_name),
+                                     triggered=self.global_callback,
+                                     data=method_name,
+                                     context=Qt.WidgetShortcut)
+                
+        self.undo_action = create_edit_action("Undo", _("Undo"),
+                                                  'undo.png')
         self.redo_action = QtGui.QAction(QtGui.QIcon(':/icons/redo.png'),
                                          "&Redo", self, shortcut="Ctrl+Y",
                                          statusTip="redo the operation",
@@ -187,7 +265,9 @@ class MainWindow(QMainWindow):
 #         
 #         self.newMonitorAct = QtGui.QAction(QtGui.QIcon(':/icons/new.png'), "&Monitor",
 #                 self, statusTip="Create a new console", triggered=self.newMonitor)
-        self.maximize_action = create_action(self, 'maximize',
+'''
+        # Maximize current plugin
+        self.maximize_action = create_action(self, '',
                                             triggered=self.maximize_dockwidget)
         self.register_shortcut(self.maximize_action, "_",
                                    "Maximize dockwidget", "Ctrl+Alt+Shift+M")
@@ -195,7 +275,7 @@ class MainWindow(QMainWindow):
             
         # Fullscreen mode
         self.fullscreen_action = create_action(self,
-                                            "Fullscreen mode",
+                                            _("Fullscreen mode"),
                                             triggered=self.toggle_fullscreen)
         self.register_shortcut(self.fullscreen_action, "_",
                                    "Fullscreen mode", "F11")
@@ -203,24 +283,46 @@ class MainWindow(QMainWindow):
                                     name="Fullscreen mode")
             
         # Main toolbar
-        self.main_toolbar_actions = [self.maximize_action,
-                                         self.fullscreen_action
-                                         ]
-            
+        self.main_toolbar_actions = [self.maximize_action,self.fullscreen_action]
+        # View menu
+        self.windows_toolbars_menu = QMenu(_("Windows and toolbars"), self)
+        self.connect(self.windows_toolbars_menu, SIGNAL("aboutToShow()"),self.update_windows_toolbars_menu)
+
     def createMenus(self):
         'initial the menus for system'
         # File menu
-        self.file_menu = self.menuBar().addMenu("&File")
+        self.file_menu = self.menuBar().addMenu(_("&File"))
         # Edit menu
-        self.edit_menu = self.menuBar().addMenu("&Edit")
+        self.edit_menu = self.menuBar().addMenu(_("&Edit"))
+        # search_menu
+        self.search_menu = self.menuBar().addMenu(_("&Search"))
         # View menu
-        self.view_menu = self.menuBar().addMenu("&View")
+        self.view_menu = self.menuBar().addMenu(_("&View"))
         # Help menu
-        self.help_menu = self.menuBar().addMenu("&Help")
+        self.help_menu = self.menuBar().addMenu(_("&Help"))
         
         add_actions(self.file_menu, self.file_menu_actions)
         add_actions(self.edit_menu, self.edit_menu_actions)
+        add_actions(self.search_menu, self.search_menu_actions)
         
+        self.view_menu.addMenu(self.windows_toolbars_menu)
+    def createToolBars(self):
+        'initial the tool bar'
+        self.main_toolbar = self.create_toolbar(_("&Main_toolbar"), "main_toolbar")
+        self.file_toolbar = self.create_toolbar(_("&File"), "file")
+        self.edit_toolbar = self.create_toolbar(_("&Edit"), "edit")
+        self.search_toolbar = self.create_toolbar(_("Search toolbar"),"search_toolbar")
+        
+        add_actions(self.main_toolbar, self.main_toolbar_actions)
+        add_actions(self.file_toolbar, self.file_toolbar_actions)
+        add_actions(self.edit_toolbar, self.edit_toolbar_actions)
+        add_actions(self.search_toolbar, self.search_toolbar_actions)
+        
+    def createStatusBar(self):
+        ''
+        status = self.statusBar()
+        status.setObjectName("StatusBar")
+        status.showMessage("Ready", 5000)
     
     #---- Window setup
     def create_toolbar(self, title, object_name, iconsize=24):
@@ -229,29 +331,13 @@ class MainWindow(QMainWindow):
         toolbar.setObjectName(object_name)
         toolbar.setIconSize(QSize(iconsize, iconsize))
         return toolbar
-    
-    def createToolBars(self):
-        'initial the tool bar'
-        self.main_toolbar = self.create_toolbar("Main_toolbar", "main_toolbar")
-        self.file_toolbar = self.create_toolbar("File", "file")
-        self.edit_toolbar = self.create_toolbar("Edit", "edit")
-        
-        
-        add_actions(self.main_toolbar, self.main_toolbar_actions)
-        add_actions(self.file_toolbar, self.file_toolbar_actions)
-        add_actions(self.edit_toolbar, self.edit_toolbar_actions)
-        
-    def createStatusBar(self):
-        ''
-        status = self.statusBar()
-        status.setObjectName("StatusBar")
-        status.showMessage("Ready", 5000)
-        
+      
     def update_windows_toolbars_menu(self):
         """Update windows&toolbars menu"""
         self.windows_toolbars_menu.clear()
         popmenu = self.createPopupMenu()
-#        add_actions(self.windows_toolbars_menu, popmenu.actions())
+        print popmenu.size()
+        add_actions(self.windows_toolbars_menu, popmenu.actions())
 
     def closeEvent(self, event):
         """closeEvent reimplementation"""
@@ -274,7 +360,22 @@ class MainWindow(QMainWindow):
 #        if CONF.get('main', 'single_instance'):
 #            self.open_files_server.close()
         return True
-    
+    def add_dockwidget(self, child):
+        """Add QDockWidget and toggleViewAction"""
+        dockwidget, location = child.create_dockwidget()
+        if CONF.get('main', 'vertical_dockwidget_titlebars'):
+            dockwidget.setFeatures(dockwidget.features()|
+                                   QDockWidget.DockWidgetVerticalTitleBar)
+        self.addDockWidget(location, dockwidget)
+        self.widgetlist.append(child)
+        
+    def close_current_dockwidget(self):
+        widget = QApplication.focusWidget()
+        for plugin in self.widgetlist:
+            if plugin.isAncestorOf(widget):
+                plugin.dockwidget.hide()
+                break
+            
     def newFile(self):
         ''
     def open(self):
@@ -291,7 +392,16 @@ class MainWindow(QMainWindow):
         print "undo"
     def redo(self):
         print "redo"
-        
+    
+    def global_callback(self):
+        """Global callback"""
+        widget = QApplication.focusWidget()
+        action = self.sender()
+        callback = from_qvariant(action.data(), unicode)
+        from SMlib.widgets.sourcecode.base import TextEditBaseWidget
+        if isinstance(widget, TextEditBaseWidget):
+            getattr(widget, callback)()
+            
     def maximize_dockwidget(self, restore=False):
         """Shortcut: Ctrl+Alt+Shift+M
         First call: maximize current dockwidget
@@ -532,15 +642,55 @@ class MainWindow(QMainWindow):
 #             qba = self.saveState()
 #             CONF.set(section, prefix+'state', qbytearray_to_str(qba))
 #             CONF.set(section, prefix+'statusbar',not self.statusBar().isHidden())
+
+    #---- Global callbacks (called from plugins)
+    '''
+    def get_current_editor_plugin(self):
+        """Return editor plugin which has focus:
+        console, extconsole, editor, inspector or historylog"""
+        if self.light:
+            return self.extconsole
+        widget = QApplication.focusWidget()
+        from spyderlib.widgets.editor import TextEditBaseWidget
+        from spyderlib.widgets.shell import ShellBaseWidget
+        if not isinstance(widget, (TextEditBaseWidget, ShellBaseWidget)):
+            return
+        for plugin in self.widgetlist:
+            if plugin.isAncestorOf(widget):
+                return plugin
+        else:
+            # External Editor window
+            plugin = widget
+            from spyderlib.widgets.editor import EditorWidget
+            while not isinstance(plugin, EditorWidget):
+                plugin = plugin.parent()
+            return plugin         
+    '''
+    def find(self):
+        """Global find callback"""
+        plugin = self.get_current_editor_plugin()
+        if plugin is not None:
+            plugin.find_widget.show()
+            plugin.find_widget.search_text.setFocus()
+            return plugin
     
-    def add_dockwidget(self, child):
-        """Add QDockWidget and toggleViewAction"""
-        dockwidget, location = child.create_dockwidget()
-        if CONF.get('main', 'vertical_dockwidget_titlebars'):
-            dockwidget.setFeatures(dockwidget.features() | 
-                                   QDockWidget.DockWidgetVerticalTitleBar)
-        self.addDockWidget(location, dockwidget)
-        self.widgetlist.append(child)
+    def find_next(self):
+        """Global find next callback"""
+        plugin = self.get_current_editor_plugin()
+        if plugin is not None:
+            plugin.find_widget.find_next()
+            
+    def find_previous(self):
+        """Global find previous callback"""
+        plugin = self.get_current_editor_plugin()
+        if plugin is not None:
+            plugin.find_widget.find_previous()
+        
+    def replace(self):
+        """Global replace callback"""
+        plugin = self.find()
+        if plugin is not None:
+            plugin.find_widget.show_replace()
         
     def resizeEvent(self, event):
         """Reimplement Qt method"""
@@ -554,12 +704,6 @@ class MainWindow(QMainWindow):
             self.window_position = self.pos()
         QMainWindow.moveEvent(self, event)
         
-    def __update_fullscreen_action(self):
-        if self.isFullScreen():
-            icon = "window_nofullscreen.png"
-        else:
-            icon = "window_fullscreen.png"
-        # self.fullscreen_action.setIcon(get_icon(icon))
         
 def run():
     ''
