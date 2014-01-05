@@ -123,7 +123,7 @@ def add_image_path(path):
             IMG_PATH.append(osp.join(path, dir))
 
 
-add_image_path(get_module_data_path('SMlib', relpath='images'))
+add_image_path(get_module_data_path('SMlib', relpath='icons'))
 
 def get_image_path(name, default="not_found.png"):
     """Return image absolute path"""
