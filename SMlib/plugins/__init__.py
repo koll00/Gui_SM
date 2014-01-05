@@ -8,6 +8,27 @@ These plugins inherit the following classes
 """
 from PyQt4.QtGui import (QDockWidget, QWidget, QShortcut, QCursor, QKeySequence, QMainWindow, QApplication)
 from PyQt4.QtCore import SIGNAL, Qt, QObject
+
+# Local imports
+from SMlib.utils.qthelpers import toggle_actions, get_icon
+from SMlib.config import CONF
+from SMlib.configs.userconfig import NoDefault
+from SMlib.configs.guiconfig import get_font, set_font
+from SMlib.plugins.configdialog import SMConfigPage
+
+class PluginConfigPage(SMConfigPage):
+    """Plugin configuration dialog box page widget"""
+    def __init__(self, plugin, parent):
+        self.plugin = plugin
+        self.get_option = plugin.get_option
+        self.set_option = plugin.set_option
+        self.get_name = plugin.get_plugin_title
+        self.get_icon = plugin.get_plugin_icon
+        self.get_font = plugin.get_plugin_font
+        self.set_font = plugin.set_plugin_font
+        self.apply_settings = plugin.apply_plugin_settings
+        SMConfigPage.__init__(self, parent)
+        
 class SMPluginMixin(object):
     """
     Useful methods to bind widgets to the main window
