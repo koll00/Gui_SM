@@ -435,6 +435,20 @@ def show_std_icons():
     import sys
     sys.exit(app.exec_())
 
+def from_qvariant(qobj=None, convfunc=None):
+        """Convert QVariant object to Python object"""
+        assert callable(convfunc)
+        if convfunc in (unicode, str):
+            return convfunc(qobj.toString())
+        elif convfunc is bool:
+            return qobj.toBool()
+        elif convfunc is int:
+            return qobj.toInt()[0]
+        elif convfunc is float:
+            return qobj.toDouble()[0]
+        else:
+            return convfunc(qobj)
 
 if __name__ == "__main__":
     show_std_icons()
+    
