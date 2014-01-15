@@ -1,0 +1,13 @@
+# THIS NOTE is for code changer from spyder.
+# Spyder is so huge and we just need parts of it.	
+# So we adjust spyder.
+#
+#
+#
+#
+#
+#
+#
+	Date								Spyer															SMlib							
+2014.01.15 	In qt package, it is Transitional package (PyQt4 --> PySide).	Simple qt package and move the codes in compat.py to 
+																			SMlib.utils.qthelper.py
