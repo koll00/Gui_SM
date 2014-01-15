@@ -7,7 +7,7 @@ These plugins inherit the following classes
 (SMderPluginMixin & SMPluginWidget)
 """
 from PyQt4.QtGui import (QDockWidget, QWidget, QShortcut, QCursor, QKeySequence, QMainWindow, QApplication)
-from PyQt4.QtCore import SIGNAL, Qt, QObject
+from PyQt4.QtCore import SIGNAL, Qt, QObject, pyqtSignal
 
 # Local imports
 from SMlib.utils.qthelpers import toggle_actions, get_icon
@@ -262,7 +262,8 @@ class SMPluginWidget(QWidget, SMPluginMixin):
     SM base widget class
     SM's widgets either inherit this class or reimplement its interface
     """
-    sig_option_changed = Signal(str, object)
+    #sig_option_changed = Signal(str, object)
+    sig_option_changed = pyqtSignal(str, object)
     
     def __init__(self, parent):
         QWidget.__init__(self, parent)
