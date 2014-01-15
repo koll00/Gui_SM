@@ -1,13 +1,15 @@
-import sys, os 
+import sys, os
 sys.path.append('..' + os.path.sep)
+import atexit
+import shutil
 
-from PyQt4.QtGui import QMainWindow, QApplication, QAction,QDockWidget, QShortcut, QMenu
+from PyQt4.QtGui import QMainWindow, QApplication, QAction,QDockWidget, QShortcut, QMenu, QMessageBox
 from PyQt4 import QtGui, QtCore
 from PyQt4.Qt import QKeySequence
 from PyQt4.QtCore import SIGNAL, Qt, QSize, QPoint,QByteArray
 import qrc_app
 
-from SMlib.configs.baseconfig import debug_print, _
+from SMlib.configs.baseconfig import debug_print, _, TEST
 from SMlib.configs.userconfig import NoDefault 
 from SMlib.configs.guiconfig import get_shortcut, remove_deprecated_shortcuts
 from SMlib.config import CONF
@@ -20,13 +22,16 @@ from SMlib.utils.qthelpers import (create_action, add_actions, get_icon,
                                        create_program_action, DialogManager,
                                        keybinding, qapplication,
                                        create_python_script_action, file_uri, from_qvariant)
-#from SMlib.plugins.ipythonConsole import IPythonConsole
+from SMlib.utils import encoding, programs
+from SMlib.plugins.ipythonConsole import IPythonConsole
+from SMlib.plugins.externalconsole import ExternalConsole
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
         
-        
+        self.light = False
+        self.new_instance = True
         # Shortcut management data
         self.shortcut_data = []
         
@@ -95,6 +100,9 @@ class MainWindow(QMainWindow):
         self.maximize_action = None
         self.fullscreen_action = None
         
+        self.interact_menu = None
+        self.interact_menu_actions = []
+        
         self.external_tools_menu_actions = []
         self.view_menu = None
         self.windows_toolbars_menu = None
@@ -107,6 +115,9 @@ class MainWindow(QMainWindow):
         # Flags used if closing() is called by the exit() shell command
         self.already_closed = False
         self.is_starting_up = True
+        
+        self.prefs_index = None
+        self.prefs_dialog_size = None
         
         self.floating_dockwidgets = []
         self.window_size = None
@@ -131,12 +142,34 @@ class MainWindow(QMainWindow):
         self.createMenus()
         self.createToolBars()
         self.createStatusBar()
-        # self.initalStatus()
-#         self.ipyconsole = IPythonConsole(self)
-#         self.ipyconsole.register_plugin()
+        #self.initalStatus()
+        self.extconsole = ExternalConsole(self, light_mode=self.light)
+        self.extconsole.register_plugin()
+        
+        
+        self.ipyconsole = IPythonConsole(self)
+        self.ipyconsole.register_plugin()
+        
         # Window set-up
         self.debug_print("Setting up window...")
         self.setup_layout(default=False)
+        
+        #self.splash.hide()
+        
+        # Enabling tear off for all menus except help menu
+        if CONF.get('main', 'tear_off_menus'):
+            for child in self.menuBar().children():
+                if isinstance(child, QMenu) and child != self.help_menu:
+                    child.setTearOffEnabled(True)
+        
+        # Menu about to show
+        for child in self.menuBar().children():
+            if isinstance(child, QMenu):
+                self.connect(child, SIGNAL("aboutToShow()"),
+                             self.update_edit_menu)
+        
+        self.debug_print("*** End of MainWindow setup ***")
+        self.is_starting_up = False
         
     def createActions(self):
 #         self.newAct = QtGui.QAction(QtGui.QIcon(':/icons/new.png'), "&New",
@@ -206,29 +239,6 @@ class MainWindow(QMainWindow):
                                            self.find_next_action,
                                            self.replace_action]
         '''    
-        self.open_action = QtGui.QAction(QtGui.QIcon(':/icons/open.png'),
-                "&Open...", self, shortcut=QtGui.QKeySequence.Open,
-                statusTip="Open an existing file", triggered=self.open)
-
-        self.save_action = QtGui.QAction(QtGui.QIcon(':/icons/save.png'),
-                "&Save", self, shortcut=QtGui.QKeySequence.Save,
-                statusTip="Save the document to disk", triggered=self.save)
-        
-        self.cut_action = QtGui.QAction(QtGui.QIcon(':/icons/cut.png'), "Cu&t",
-                self, shortcut=QtGui.QKeySequence.Cut,
-                statusTip="Cut the current selection's contents to the clipboard",
-                triggered=self.cut)
-
-        self.copy_action = QtGui.QAction(QtGui.QIcon(':/icons/copy.png'),
-                "&Copy", self, shortcut=QtGui.QKeySequence.Copy,
-                statusTip="Copy the current selection's contents to the clipboard",
-                triggered=self.copy)
-
-        self.paste_action = QtGui.QAction(QtGui.QIcon(':/icons/paste.png'),
-                "&Paste", self, shortcut=QtGui.QKeySequence.Paste,
-                statusTip="Paste the clipboard's contents into the current selection",
-                triggered=self.paste)
-        
 #         self.undo_action = QtGui.QAction(QtGui.QIcon(':/icons/undo.png'),
 #                                          "&Undo", self, shortcut="Ctrl+Z",
 #                                          statusTip="undo the operation",
@@ -287,7 +297,15 @@ class MainWindow(QMainWindow):
         # View menu
         self.windows_toolbars_menu = QMenu(_("Windows and toolbars"), self)
         self.connect(self.windows_toolbars_menu, SIGNAL("aboutToShow()"),self.update_windows_toolbars_menu)
-
+        
+        # Populating file menu entries
+        quit_action = create_action(self, _("&Quit"),
+                                        icon='exit.png', tip=_("Quit"),
+                                        triggered=self.close)
+        self.register_shortcut(quit_action, "_", "Quit", "Ctrl+Q")
+        self.file_menu_actions += [quit_action]
+        
+        
     def createMenus(self):
         'initial the menus for system'
         # File menu
@@ -306,11 +324,16 @@ class MainWindow(QMainWindow):
         add_actions(self.search_menu, self.search_menu_actions)
         
         self.view_menu.addMenu(self.windows_toolbars_menu)
+        
     def createToolBars(self):
         'initial the tool bar'
+        #main tool bar
         self.main_toolbar = self.create_toolbar(_("&Main_toolbar"), "main_toolbar")
+        #file tool bar
         self.file_toolbar = self.create_toolbar(_("&File"), "file")
+        #edit tool bar
         self.edit_toolbar = self.create_toolbar(_("&Edit"), "edit")
+        #search tool bar
         self.search_toolbar = self.create_toolbar(_("Search toolbar"),"search_toolbar")
         
         add_actions(self.main_toolbar, self.main_toolbar_actions)
@@ -336,7 +359,6 @@ class MainWindow(QMainWindow):
         """Update windows&toolbars menu"""
         self.windows_toolbars_menu.clear()
         popmenu = self.createPopupMenu()
-        print popmenu.size()
         add_actions(self.windows_toolbars_menu, popmenu.actions())
 
     def closeEvent(self, event):
@@ -355,7 +377,7 @@ class MainWindow(QMainWindow):
         for widget in self.widgetlist:
             if not widget.closing_plugin(cancelable):
                 return False
-#         self.dialog_manager.close_all()
+        #self.dialog_manager.close_all()
         self.already_closed = True
 #        if CONF.get('main', 'single_instance'):
 #            self.open_files_server.close()
@@ -368,31 +390,57 @@ class MainWindow(QMainWindow):
                                    QDockWidget.DockWidgetVerticalTitleBar)
         self.addDockWidget(location, dockwidget)
         self.widgetlist.append(child)
-        
+
     def close_current_dockwidget(self):
         widget = QApplication.focusWidget()
         for plugin in self.widgetlist:
             if plugin.isAncestorOf(widget):
                 plugin.dockwidget.hide()
                 break
-            
-    def newFile(self):
-        ''
-    def open(self):
-        ''
-    def save(self):
-        ''
-    def cut(self):
-        ''
-    def copy(self):
-        ''
-    def paste(self):
-        ''
-    def undo(self):
-        print "undo"
-    def redo(self):
-        print "redo"
     
+    def plugin_focus_changed(self):
+        """Focus has changed from one plugin to another"""
+        if self.light:
+            #  There is currently no point doing the following in light mode
+            return
+        self.update_edit_menu()
+        self.update_search_menu()
+        
+        # Now deal with Python shell and IPython plugins 
+        shell = get_focus_python_shell()
+        if shell is not None:
+            # A Python shell widget has focus
+            self.last_console_plugin_focus_was_python = True
+            if self.inspector is not None:
+                #  The object inspector may be disabled in .spyder.ini
+                self.inspector.set_shell(shell)
+            from spyderlib.widgets.externalshell import pythonshell
+            if isinstance(shell, pythonshell.ExtPythonShellWidget):
+                shell = shell.parent()
+            self.variableexplorer.set_shellwidget_from_id(id(shell))
+        elif self.ipyconsole is not None:
+            focus_client = self.ipyconsole.get_focus_client()
+            if focus_client is not None:
+                self.last_console_plugin_focus_was_python = False
+                kwid = focus_client.kernel_widget_id
+                if kwid is not None:
+                    idx = self.extconsole.get_shell_index_from_id(kwid)
+                    if idx is not None:
+                        kw = self.extconsole.shellwidgets[idx]
+                        if self.inspector is not None:
+                            self.inspector.set_shell(kw)
+                        self.variableexplorer.set_shellwidget_from_id(kwid)
+                        # Setting the kernel widget as current widget for the 
+                        # external console's tabwidget: this is necessary for
+                        # the editor/console link to be working (otherwise,
+                        # features like "Execute in current interpreter" will 
+                        # not work with IPython clients unless the associated
+                        # IPython kernel has been selected in the external 
+                        # console... that's not brilliant, but it works for 
+                        # now: we shall take action on this later
+                        self.extconsole.tabwidget.setCurrentWidget(kw)
+                        focus_client.get_control().setFocus()
+                        
     def global_callback(self):
         """Global callback"""
         widget = QApplication.focusWidget()
@@ -446,7 +494,46 @@ class MainWindow(QMainWindow):
         else:
             icon = "window_fullscreen.png"
         self.fullscreen_action.setIcon(get_icon(icon))
+    
+    def update_edit_menu(self):
+        """Update edit menu"""
+        if self.menuBar().hasFocus():
+            return
+        # Disabling all actions to begin with
+        for child in self.edit_menu.actions():
+            child.setEnabled(False)        
         
+        widget, textedit_properties = get_focus_widget_properties()
+        if textedit_properties is None: # widget is not an editor/console
+            return
+        #!!! Below this line, widget is expected to be a QPlainTextEdit instance
+        console, not_readonly, readwrite_editor = textedit_properties
+        
+        # Editor has focus and there is no file opened in it
+        if not console and not_readonly and not self.editor.is_file_opened():
+            return
+        
+        self.selectall_action.setEnabled(True)
+        
+        # Undo, redo
+        self.undo_action.setEnabled( readwrite_editor \
+                                     and widget.document().isUndoAvailable() )
+        self.redo_action.setEnabled( readwrite_editor \
+                                     and widget.document().isRedoAvailable() )
+
+        # Copy, cut, paste, delete
+        has_selection = widget.has_selected_text()
+        self.copy_action.setEnabled(has_selection)
+        self.cut_action.setEnabled(has_selection and not_readonly)
+        self.paste_action.setEnabled(not_readonly)
+        self.delete_action.setEnabled(has_selection and not_readonly)
+        
+        # Comment, uncomment, indent, unindent...
+        if not console and not_readonly:
+            # This is the editor and current file is writable
+            for action in self.editor.edit_menu_actions:
+                action.setEnabled(True)
+                   
     def toggle_fullscreen(self):
         if self.isFullScreen():
             self.fullscreen_flag = False
@@ -526,7 +613,7 @@ class MainWindow(QMainWindow):
         prefix = 'window/'
         (hexstate, window_size, prefs_dialog_size, pos, is_maximized,
          is_fullscreen) = self.load_window_settings(prefix, default)
-        
+
         # if hexstate is None and not self.light:
         if hexstate is None:
             # First Spyder execution:
@@ -552,27 +639,41 @@ class MainWindow(QMainWindow):
                                   ):
                 if first is not None and second is not None:
                     self.tabify_plugins(first, second)
-            """
+                    
+            '''
             for plugin in [self.findinfiles, self.onlinehelp, self.console,]+self.thirdparty_plugins:
                 if plugin is not None:
                     plugin.dockwidget.close()
             for plugin in (self.inspector, self.extconsole):
                 if plugin is not None:
                     plugin.dockwidget.raise_()
+                    '''
             self.extconsole.setMinimumHeight(250)
             hidden_toolbars = [self.source_toolbar, self.edit_toolbar,
                                self.search_toolbar]
             for toolbar in hidden_toolbars:
-                toolbar.close()
+                if toolbar is not None:
+                    toolbar.close()
             for plugin in (self.projectexplorer, self.outlineexplorer):
-                plugin.dockwidget.close()
-            """
+                if plugin is not None:
+                    plugin.dockwidget.close()
+            
         self.set_window_settings(hexstate, window_size, prefs_dialog_size, pos,
                                  is_maximized, is_fullscreen)
 
         for plugin in self.widgetlist:
             plugin.initialize_plugin_in_mainwindow_layout()
     
+    def reset_window_layout(self):
+        """Reset window layout to default"""
+        answer = QMessageBox.warning(self, _("Warning"),
+                     _("Window layout will be reset to default settings: "
+                       "this affects window position, size and dockwidgets.\n"
+                       "Do you want to continue?"),
+                     QMessageBox.Yes | QMessageBox.No)
+        if answer == QMessageBox.Yes:
+            self.setup_layout(default=True)
+            
     def set_window_settings(self, hexstate, window_size, prefs_dialog_size,
                             pos, is_maximized, is_fullscreen):
         """Set window settings
@@ -703,7 +804,120 @@ class MainWindow(QMainWindow):
         if not self.isMaximized() and not self.fullscreen_flag:
             self.window_position = self.pos()
         QMainWindow.moveEvent(self, event)
+    
+    def tabify_plugins(self, first, second):
+        """Tabify plugin dockwigdets"""
+        print self.tabifyDockWidget(first.dockwidget, second.dockwidget)
         
+    def remove_tmpdir(self):
+        """Remove Spyder temporary directory"""
+        shutil.rmtree(programs.TEMPDIR, ignore_errors=True)
+        
+    def apply_settings(self):
+        """Apply settings changed in 'Preferences' dialog box"""
+        qapp = QApplication.instance()
+        qapp.setStyle(CONF.get('main', 'windows_style', self.default_style))
+        
+        default = self.DOCKOPTIONS
+        if CONF.get('main', 'vertical_tabs'):
+            default = default|QMainWindow.VerticalTabs
+        if CONF.get('main', 'animated_docks'):
+            default = default|QMainWindow.AnimatedDocks
+        self.setDockOptions(default)
+        
+        for child in self.widgetlist:
+            features = child.FEATURES
+            if CONF.get('main', 'vertical_dockwidget_titlebars'):
+                features = features|QDockWidget.DockWidgetVerticalTitleBar
+            child.dockwidget.setFeatures(features)
+            child.update_margins()
+        
+        self.apply_statusbar_settings()
+        
+    def post_visible_setup(self):
+        """Actions to be performed only after the main window's `show` method 
+        was triggered"""
+        self.emit(SIGNAL('restore_scrollbar_position()'))
+        if self.projectexplorer is not None:
+            self.projectexplorer.check_for_io_errors()
+        
+        # Remove our temporary dir
+        atexit.register(self.remove_tmpdir)
+        
+        # Remove settings test directory
+        if TEST is not None:
+            import tempfile
+            conf_dir = osp.join(tempfile.gettempdir(), SUBFOLDER)
+            atexit.register(shutil.rmtree, conf_dir, ignore_errors=True)
+
+        # [Workaround for Issue 880]
+        # QDockWidget objects are not painted if restored as floating 
+        # windows, so we must dock them before showing the mainwindow,
+        # then set them again as floating windows here.
+        for widget in self.floating_dockwidgets:
+            widget.setFloating(True)
+
+        # In MacOS X 10.7 our app is not displayed after initialized (I don't
+        # know why because this doesn't happen when started from the terminal),
+        # so we need to resort to this hack to make it appear.
+        if sys.platform == 'darwin' and 'Spyder.app' in __file__:
+            import subprocess
+            idx = __file__.index('Spyder.app')
+            app_path = __file__[:idx]
+            subprocess.call(['open', app_path + 'Spyder.app'])
+
+        # Server to maintain just one Spyder instance and open files in it if
+        # the user tries to start other instances with
+        # $ spyder foo.py
+        if CONF.get('main', 'single_instance') and not self.new_instance:
+            t = threading.Thread(target=self.start_open_files_server)
+            t.setDaemon(True)
+            t.start()
+        
+            # Connect the window to the signal emmited by the previous server
+            # when it gets a client connected to it
+            self.connect(self, SIGNAL('open_external_file(QString)'),
+                         lambda fname: self.open_external_file(fname))
+        
+        # Open a Python or IPython console at startup
+        # NOTE: Leave this at the end of post_visible_setup because
+        #       it seems to avoid being unable to start a console at
+        #       startup *sometimes* if using PySide
+        if self.light:
+            self.extconsole.open_interpreter()
+        else:
+            self.extconsole.open_interpreter_at_startup()
+        self.extconsole.setMinimumHeight(0)
+#==============================================================================
+# Spyder's main window widgets utilities
+#==============================================================================
+def get_focus_python_shell():
+    """Extract and return Python shell from widget
+    Return None if *widget* is not a Python shell (e.g. IPython kernel)"""
+    widget = QApplication.focusWidget()
+    from spyderlib.widgets.shell import PythonShellWidget
+    from spyderlib.widgets.externalshell.pythonshell import ExternalPythonShell
+    if isinstance(widget, PythonShellWidget):
+        return widget
+    elif isinstance(widget, ExternalPythonShell):
+        return widget.shell
+
+def get_focus_widget_properties():
+    """Get properties of focus widget
+    Returns tuple (widget, properties) where properties is a tuple of
+    booleans: (is_console, not_readonly, readwrite_editor)"""
+    widget = QApplication.focusWidget()
+    from spyderlib.widgets.shell import ShellBaseWidget
+    from spyderlib.widgets.editor import TextEditBaseWidget
+    textedit_properties = None
+    if isinstance(widget, (ShellBaseWidget, TextEditBaseWidget)):
+        console = isinstance(widget, ShellBaseWidget)
+        not_readonly = not widget.isReadOnly()
+        readwrite_editor = not_readonly and not console
+        textedit_properties = (console, not_readonly, readwrite_editor)
+    return widget, textedit_properties
+
+ 
         
 def run():
     ''
@@ -714,9 +928,9 @@ def run():
     main = MainWindow()
     main.setUp()
     main.show()
+   # main.post_visible_setup()
     app.exec_()
     
     
 if __name__ == '__main__':
-    run()
-    
+     run()    
