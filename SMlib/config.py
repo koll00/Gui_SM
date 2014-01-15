@@ -41,8 +41,11 @@ DEFAULTS = [
               'window/prefs_dialog_size': (745, 411),
               'window/is_maximized': False,
               'window/is_fullscreen': False,
+              'single_instance': True,
+              'tear_off_menus': False,
               'vertical_dockwidget_titlebars': False,
-              'vertical_tabs': False,
+              'vertical_tabs': True,
+              'animated_docks': True,
               }
              ),
             ('ipython_console',
