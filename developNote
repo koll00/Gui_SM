@@ -11,3 +11,5 @@
 	Date								Spyer															SMlib							
 2014.01.15 	In qt package, it is Transitional package (PyQt4 --> PySide).	Simple qt package and move the codes in compat.py to 
 																			SMlib.utils.qthelper.py
+																			
+2014.01.16 In config.py, 'matplotlib/patch' is True in config.				Change 'matplotlib/patch' from True to False
