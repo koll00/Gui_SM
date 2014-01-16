@@ -8,7 +8,7 @@
 IPython configuration variables needed by Spyder
 """
 
-from spyderlib.utils import programs
+from SMlib.utils import programs
 
 #==============================================================================
 # Constants
