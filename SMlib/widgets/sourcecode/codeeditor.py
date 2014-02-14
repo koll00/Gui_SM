@@ -2,7 +2,7 @@
 #
 # Copyright © 2009-2010 Pierre Raybaut
 # Licensed under the terms of the MIT License
-# (see spyderlib/__init__.py for details)
+# (see SMlib/__init__.py for details)
 
 """
 Editor widget based on QtGui.QPlainTextEdit
@@ -23,8 +23,9 @@ import sre_constants
 import os.path as osp
 import time
 
-from spyderlib.qt import is_pyqt46
-from spyderlib.qt.QtGui import (QColor, QMenu, QApplication, QSplitter, QFont,
+#from SMlib.qt import is_pyqt46
+is_pyqt46 = False
+from PyQt4.QtGui import (QColor, QMenu, QApplication, QSplitter, QFont,
                                 QTextEdit, QTextFormat, QPainter, QTextCursor,
                                 QBrush, QTextDocument, QTextCharFormat,
                                 QPixmap, QPrinter, QToolTip, QCursor, QLabel,
@@ -32,27 +33,27 @@ from spyderlib.qt.QtGui import (QColor, QMenu, QApplication, QSplitter, QFont,
                                 QShortcut, QKeySequence, QWidget, QVBoxLayout,
                                 QHBoxLayout, QDialog, QIntValidator,
                                 QDialogButtonBox, QGridLayout)
-from spyderlib.qt.QtCore import (Qt, SIGNAL, QTimer, QRect, QRegExp, QSize,
-                                 SLOT, Slot)
-from spyderlib.qt.compat import to_qvariant
+from PyQt4.QtCore import (Qt, SIGNAL, QTimer, QRect, QRegExp, QSize,
+                                 SLOT, pyqtSlot)
+from SMlib.utils.qthelpers import to_qvariant
 
 #%% This line is for cell execution testing
 # Local import
-#TODO: Try to separate this module from spyderlib to create a self
+#TODO: Try to separate this module from SMlib to create a self
 #      consistent editor module (Qt source code and shell widgets library)
-from spyderlib.baseconfig import get_conf_path, _, DEBUG, get_image_path
-from spyderlib.config import CONF
-from spyderlib.guiconfig import get_font
-from spyderlib.utils.qthelpers import (add_actions, create_action, keybinding,
+from SMlib.configs.baseconfig import get_conf_path, _, DEBUG, get_image_path
+from SMlib.config import CONF
+from SMlib.configs.guiconfig import get_font
+from SMlib.utils.qthelpers import (add_actions, create_action, keybinding,
                                        mimedata2url, get_icon)
-from spyderlib.utils.dochelpers import getobj
-from spyderlib.utils import encoding, sourcecode
-from spyderlib.utils.debug import log_last_error, log_dt
-from spyderlib.widgets.editortools import PythonCFM
-from spyderlib.widgets.sourcecode.base import TextEditBaseWidget
-from spyderlib.widgets.sourcecode import syntaxhighlighters as sh
-from spyderlib.py3compat import to_text_string, PY2
-from spyderlib import dependencies
+from SMlib.utils.dochelpers import getobj
+from SMlib.utils import encoding, sourcecode
+from SMlib.utils.debug import log_last_error, log_dt
+from SMlib.widgets.editortools import PythonCFM
+from SMlib.widgets.sourcecode.base import TextEditBaseWidget
+from SMlib.widgets.sourcecode import syntaxhighlighters as sh
+from SMlib.py3compat import to_text_string, PY2
+from SMlib import dependencies
 
 #%% This line is for cell execution testing
 # For debugging purpose:
@@ -71,7 +72,7 @@ dependencies.add('rope',
 
 try:
     try:
-        from spyderlib import rope_patch
+        from SMlib import rope_patch
         rope_patch.apply()
     except ImportError:
         # rope 0.9.2/0.9.3 is not installed
@@ -1507,7 +1508,7 @@ class CodeEditor(TextEditBaseWidget):
 #===============================================================================
 #    High-level editor features
 #===============================================================================
-    @Slot()
+    @pyqtSlot()
     def center_cursor_on_next_focus(self):
         """QPlainTextEdit's "centerCursor" requires the widget to be visible"""
         self.centerCursor()
@@ -2544,7 +2545,7 @@ class TestWidget(QSplitter):
                                  font=QFont("Courier New", 10),
                                  color_scheme='Pydev')
         self.addWidget(self.editor)
-        from spyderlib.widgets.editortools import OutlineExplorerWidget
+        from SMlib.widgets.editortools import OutlineExplorerWidget
         self.classtree = OutlineExplorerWidget(self)
         self.addWidget(self.classtree)
         self.connect(self.classtree, SIGNAL("edit_goto(QString,int,QString)"),
@@ -2561,7 +2562,7 @@ class TestWidget(QSplitter):
         self.classtree.set_current_editor(self.editor, filename, False, False)
 
 def test(fname):
-    from spyderlib.utils.qthelpers import qapplication
+    from SMlib.utils.qthelpers import qapplication
     app = qapplication()
     app.setStyle('Plastique')
     win = TestWidget(None)
@@ -2569,7 +2570,7 @@ def test(fname):
     win.load(fname)
     win.resize(1000, 800)
 
-    from spyderlib.utils.codeanalysis import (check_with_pyflakes,
+    from SMlib.utils.codeanalysis import (check_with_pyflakes,
                                               check_with_pep8)
     source_code = to_text_string(win.editor.toPlainText())
     res = check_with_pyflakes(source_code, fname)#+\
