@@ -34,8 +34,8 @@ from SMlib.utils.misc import (get_error_match, get_python_executable,
                                   remove_backslashes, is_python_script)
 from SMlib.utils.qthelpers import get_icon, create_action, mimedata2url, getopenfilename
 from SMlib.widgets.tabs import Tabs
-#from SMlib.widgets.externalshell.pythonshell import ExternalPythonShell
-#from SMlib.widgets.externalshell.systemshell import ExternalSystemShell
+from SMlib.widgets.externalshell.pythonshell import ExternalPythonShell
+from SMlib.widgets.externalshell.systemshell import ExternalSystemShell
 from SMlib.widgets.findreplace import FindReplace
 from SMlib.plugins import SMPluginWidget, PluginConfigPage
 from SMlib import dependencies
@@ -756,6 +756,7 @@ class ExternalConsole(SMPluginWidget):
                    (option "-u" is mandatory, see widgets.externalshell package)
         """
         # Note: fname is None <=> Python interpreter
+        
         if fname is not None and not isinstance(fname, basestring):
             fname = unicode(fname)
         if wdir is not None and not isinstance(wdir, basestring):
@@ -784,6 +785,8 @@ class ExternalConsole(SMPluginWidget):
         pythonpath = self.main.get_spyder_pythonpath()
         light_background = self.get_option('light_background')
         show_elapsed_time = self.get_option('show_elapsed_time')
+
+        
         if python:
             if self.get_option('pythonexecutable/default', True):
                 pythonexecutable = get_python_executable()
@@ -878,7 +881,7 @@ class ExternalConsole(SMPluginWidget):
                                           menu_actions=self.menu_actions,
                                           show_buttons_inside=False,
                                           show_elapsed_time=show_elapsed_time)
-        
+            
         # Code completion / calltips
         shellwidget.shell.setMaximumBlockCount(
                                             self.get_option('max_line_count') )
@@ -906,10 +909,10 @@ class ExternalConsole(SMPluginWidget):
                      self.go_to_error)
         self.connect(shellwidget.shell, SIGNAL("focus_changed()"),
                      lambda: self.emit(SIGNAL("focus_changed()")))
+        
         if python:
             if self.main.editor is not None:
-                self.connect(shellwidget, SIGNAL('open_file(QString,int)'),
-                             self.open_file_in_spyder)
+                self.connect(shellwidget, SIGNAL('open_file(QString,int)'),self.open_file_in_spyder)
             if fname is None:
                 if ipykernel:
                     # Detect if kernel and frontend match or not
@@ -926,7 +929,7 @@ class ExternalConsole(SMPluginWidget):
                                                        interpreter=pyexec)
                     else:
                         kernel_and_frontend_match = True
-                    
+                    print kernel_and_frontend_match
                     # Create a a kernel tab only if frontend and kernel
                     # versions match
                     if kernel_and_frontend_match:
@@ -1255,10 +1258,15 @@ class ExternalConsole(SMPluginWidget):
         if wdir is None:
             wdir = os.getcwdu()
         self.main.ipyconsole.visibility_changed(True)
+        '''
         self.start(fname=None, wdir=unicode(wdir), args='',
                    interact=True, debug=False, python=True,
                    ipykernel=True, ipyclient=create_client)
-
+        '''           
+        self.start(fname=None, wdir=unicode(wdir), args='',
+                   interact=True, debug=False, python=True,
+                   ipykernel=True, ipyclient=create_client)
+        
     def open_terminal(self, wdir=None):
         """Open terminal"""
         if wdir is None:
