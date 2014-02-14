@@ -1,15 +1,19 @@
 import sys, os
 sys.path.append('..' + os.path.sep)
+import os.path as osp
 import atexit
 import shutil
 
+#from SMlib.plugins.ipythonConsole import IPythonConsole
+from SMlib.plugins.externalconsole import ExternalConsole
+
 from PyQt4.QtGui import QMainWindow, QApplication, QAction,QDockWidget, QShortcut, QMenu, QMessageBox
-from PyQt4 import QtGui, QtCore
+
 from PyQt4.Qt import QKeySequence
 from PyQt4.QtCore import SIGNAL, Qt, QSize, QPoint,QByteArray
-import qrc_app
 
-from SMlib.configs.baseconfig import debug_print, _, TEST
+
+from SMlib.configs.baseconfig import debug_print, _, TEST, get_conf_path
 from SMlib.configs.userconfig import NoDefault 
 from SMlib.configs.guiconfig import get_shortcut, remove_deprecated_shortcuts
 from SMlib.config import CONF
@@ -23,10 +27,11 @@ from SMlib.utils.qthelpers import (create_action, add_actions, get_icon,
                                        keybinding, qapplication,
                                        create_python_script_action, file_uri, from_qvariant)
 from SMlib.utils import encoding, programs
-from SMlib.plugins.ipythonConsole import IPythonConsole
-from SMlib.plugins.externalconsole import ExternalConsole
+
 
 class MainWindow(QMainWindow):
+    SM_path = get_conf_path('.path')
+    
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
         
@@ -34,6 +39,16 @@ class MainWindow(QMainWindow):
         self.new_instance = True
         # Shortcut management data
         self.shortcut_data = []
+        
+        # Loading SM path
+        self.path = []
+        self.project_path = []
+        if osp.isfile(self.SM_path):
+            self.path, _x = encoding.readlines(self.SM_path)
+            self.path = [name for name in self.path if osp.isdir(name)]
+        self.remove_path_from_sys_path()
+        self.add_path_to_sys_path()
+        
         
         self.console = None
         self.workingdirectory = None
@@ -147,8 +162,8 @@ class MainWindow(QMainWindow):
         self.extconsole.register_plugin()
         
         
-        self.ipyconsole = IPythonConsole(self)
-        self.ipyconsole.register_plugin()
+        #self.ipyconsole = IPythonConsole(self)
+        #self.ipyconsole.register_plugin()
         
         # Window set-up
         self.debug_print("Setting up window...")
@@ -738,11 +753,11 @@ class MainWindow(QMainWindow):
         CONF.set(section, prefix + 'is_fullscreen', self.isFullScreen())
         pos = self.window_position
         CONF.set(section, prefix + 'position', (pos.x(), pos.y()))
-#         if not self.light:
-#             self.maximize_dockwidget(restore=True)# Restore non-maximized layout
-#             qba = self.saveState()
-#             CONF.set(section, prefix+'state', qbytearray_to_str(qba))
-#             CONF.set(section, prefix+'statusbar',not self.statusBar().isHidden())
+        if not self.light:
+            self.maximize_dockwidget(restore=True)# Restore non-maximized layout
+            qba = self.saveState()
+            CONF.set(section, prefix+'state', qbytearray_to_str(qba))
+            CONF.set(section, prefix+'statusbar',not self.statusBar().isHidden())
 
     #---- Global callbacks (called from plugins)
     '''
@@ -888,6 +903,21 @@ class MainWindow(QMainWindow):
         else:
             self.extconsole.open_interpreter_at_startup()
         self.extconsole.setMinimumHeight(0)
+
+    #---- PYTHONPATH management, etc.
+    def get_spyder_pythonpath(self):
+        """Return Spyder PYTHONPATH"""
+        return self.path+self.project_path
+    def add_path_to_sys_path(self):
+        """Add Spyder path to sys.path"""
+        for path in reversed(self.get_spyder_pythonpath()):
+            sys.path.insert(1, path)
+
+    def remove_path_from_sys_path(self):
+        """Remove Spyder path from sys.path"""
+        sys_path = sys.path
+        while sys_path[1] in self.get_spyder_pythonpath():
+            sys_path.pop(1)
 #==============================================================================
 # Spyder's main window widgets utilities
 #==============================================================================
