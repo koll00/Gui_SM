@@ -13,3 +13,5 @@
 																			SMlib.utils.qthelper.py
 																			
 2014.01.16 In config.py, 'matplotlib/patch' is True in config.				Change 'matplotlib/patch' from True to False
+
+2014.03.06 In pyqt, there is Signal. 										But in PyQt4.QtCore, we should use pyqtSignal
