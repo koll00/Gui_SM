@@ -189,5 +189,37 @@ def get_translation(modname, dirname=None):
 # Translation callback
 _ = get_translation("SMlib")
 
+#==============================================================================
+# Namespace Browser (Variable Explorer) configuration management
+#==============================================================================
+
+def get_supported_types():
+    """
+    Return a dictionnary containing types lists supported by the 
+    namespace browser:
+    dict(picklable=picklable_types, editable=editables_types)
+         
+    See:
+    get_remote_data function in spyderlib/widgets/externalshell/monitor.py
+    get_internal_shell_filter method in namespacebrowser.py
+    
+    Note:
+    If you update this list, don't forget to update doc/variablexplorer.rst
+    """
+    from datetime import date
+    editable_types = [int, long, float, list, dict, tuple, str, unicode, date]
+    try:
+        from numpy import ndarray, matrix
+        editable_types += [ndarray, matrix]
+    except ImportError:
+        pass
+    picklable_types = editable_types[:]
+    try:
+        from spyderlib.pil_patch import Image
+        editable_types.append(Image.Image)
+    except ImportError:
+        pass
+    return dict(picklable=picklable_types, editable=editable_types)
+
 if __name__ == '__main__':
     add_image_path(get_module_data_path('SMlib', relpath='icons'))
