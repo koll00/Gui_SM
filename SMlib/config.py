@@ -66,7 +66,7 @@ DEFAULTS = [
               'codecompletion/show_single': False,
               'show_elapsed_time': True,
               'show_icontext': False,
-              #'monitor/enabled': True,
+              'monitor/enabled': True,
               'matplotlib/patch': False,
               'qt/install_inputhook': os.name == 'nt' \
                                       or os.environ.get('QT_API') == 'pyside',
