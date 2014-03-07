@@ -12,7 +12,7 @@ import os.path as osp
 from SMlib.configs import __version__
 
 from SMlib.configs.userconfig import UserConfig
-from SMlib.configs.baseconfig import SUBFOLDER, CHECK_ALL, EXCLUDED_NAMES
+from SMlib.configs.baseconfig import SUBFOLDER, CHECK_ALL, EXCLUDED_NAMES, _
 
 SANS_SERIF = ['Sans Serif', 'DejaVu Sans', 'Bitstream Vera Sans',
               'Bitstream Charter', 'Lucida Grande', 'MS Shell Dlg 2',
@@ -33,6 +33,63 @@ else:
     MEDIUM = 9
     SMALL = 9
     
+# Extensions supported by SMGui's Editor
+EDIT_FILETYPES = (
+    (_("Python files"), ('.py', '.pyw', '.ipy')),
+    (_("Cython/Pyrex files"), ('.pyx', '.pxd', '.pxi')),
+    (_("C files"), ('.c', '.h')),
+    (_("C++ files"), ('.cc', '.cpp', '.cxx', '.h', '.hh', '.hpp', '.hxx')),
+    (_("OpenCL files"), ('.cl', )),
+    (_("Fortran files"), ('.f', '.for', '.f77', '.f90', '.f95', '.f2k')),
+    (_("IDL files"), ('.pro', )),
+    (_("MATLAB files"), ('.m', )),
+    (_("Patch and diff files"), ('.patch', '.diff', '.rej')),
+    (_("Batch files"), ('.bat', '.cmd')),
+    (_("Text files"), ('.txt',)),
+    (_("reStructured Text files"), ('.txt', '.rst')),
+    (_("gettext files"), ('.po', '.pot')),
+    (_("NSIS files"), ('.nsi', '.nsh')),
+    (_("Web page files"), ('.css', '.htm', '.html',)),
+    (_("XML files"), ('.xml',)),
+    (_("Javascript files"), ('.js',)),
+    (_("Enaml files"), ('.enaml',)),
+    (_("Configuration files"), ('.properties', '.session', '.ini', '.inf',
+                                '.reg', '.cfg', '.desktop')),
+                 )
+
+
+def _create_filter(title, ftypes):
+    return "%s (*%s)" % (title, " *".join(ftypes))
+
+ALL_FILTER = "%s (*)" % _("All files")
+
+def _get_filters(filetypes):
+    filters = []
+    for title, ftypes in filetypes:
+        filters.append(_create_filter(title, ftypes))
+    filters.append(ALL_FILTER)
+    return ";;".join(filters)
+
+def _get_extensions(filetypes):
+    ftype_list = []
+    for _title, ftypes in filetypes:
+        ftype_list += list(ftypes)
+    return ftype_list
+
+def get_filter(filetypes, ext):
+    """Return filter associated to file extension"""
+    if not ext:
+        return ALL_FILTER
+    for title, ftypes in filetypes:
+        if ext in ftypes:
+            return _create_filter(title, ftypes)
+    else:
+        return ''
+    
+EDIT_FILTERS = _get_filters(EDIT_FILETYPES)
+EDIT_EXT = _get_extensions(EDIT_FILETYPES)+['']
+
+
 DEFAULTS = [
             ('main',
              {
