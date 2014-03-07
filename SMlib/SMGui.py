@@ -4,7 +4,7 @@ import os.path as osp
 import atexit
 import shutil
 
-#from SMlib.plugins.ipythonConsole import IPythonConsole
+from SMlib.plugins.ipythonConsole import IPythonConsole
 from SMlib.plugins.externalconsole import ExternalConsole
 
 from PyQt4.QtGui import QMainWindow, QApplication, QAction,QDockWidget, QShortcut, QMenu, QMessageBox
@@ -162,8 +162,8 @@ class MainWindow(QMainWindow):
         self.extconsole.register_plugin()
         
         
-        #self.ipyconsole = IPythonConsole(self)
-        #self.ipyconsole.register_plugin()
+        self.ipyconsole = IPythonConsole(self)
+        self.ipyconsole.register_plugin()
         
         # Window set-up
         self.debug_print("Setting up window...")

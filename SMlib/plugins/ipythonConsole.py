@@ -43,7 +43,7 @@ from SMlib.utils.misc import get_error_match, remove_backslashes
 from SMlib.utils.qthelpers import (get_icon, get_std_icon, create_action,
                                        create_toolbutton, add_actions)
 from SMlib.widgets.tabs import Tabs
-# from SMlib.widgets.ipython import SMIPythonWidget
+from SMlib.widgets.ipython import SMIPythonWidget
 from SMlib.widgets.findreplace import FindReplace
 from SMlib.plugins import SMPluginWidget, PluginConfigPage
 from SMlib.widgets.mixins import SaveHistoryMixin
@@ -758,7 +758,7 @@ class IPythonConsole(SMPluginWidget):
     
     def get_plugin_actions(self):
         """Return a list of actions related to plugin"""
-        '''
+        
         create_client_action = create_action(self,
                                 _("Open an IPython console"),
                                 None, 'ipython_console.png',
@@ -779,7 +779,7 @@ class IPythonConsole(SMPluginWidget):
         self.menu_actions = [create_client_action, connect_to_kernel_action]
         
         return self.menu_actions
-'''
+
     def on_first_registration(self):
         """Action to be performed on first plugin registration"""
         self.main.tabify_plugins(self.main.extconsole, self)
@@ -875,7 +875,7 @@ class IPythonConsole(SMPluginWidget):
         km, kc = self.create_kernel_manager_and_client(connection_file)
         if (km, kc) == (None, None):
             return None
-        widget = SMIPythonWidget(config=config, local_kernel=False)
+        #widget = SMIPythonWidget(config=config, local_kernel=False)
         widget.kernel_manager = km
         widget.kernel_client = kc
         return widget

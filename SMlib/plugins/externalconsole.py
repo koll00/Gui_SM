@@ -1258,15 +1258,15 @@ class ExternalConsole(SMPluginWidget):
         if wdir is None:
             wdir = os.getcwdu()
         self.main.ipyconsole.visibility_changed(True)
+        
+        self.start(fname=None, wdir=unicode(wdir), args='',
+                   interact=True, debug=False, python=True,
+                   ipykernel=True, ipyclient=create_client)
         '''
         self.start(fname=None, wdir=unicode(wdir), args='',
                    interact=True, debug=False, python=True,
                    ipykernel=True, ipyclient=create_client)
-        '''           
-        self.start(fname=None, wdir=unicode(wdir), args='',
-                   interact=True, debug=False, python=True,
-                   ipykernel=True, ipyclient=create_client)
-        
+        '''
     def open_terminal(self, wdir=None):
         """Open terminal"""
         if wdir is None:

@@ -2,27 +2,29 @@
 #
 # Copyright © 2011-2012 Pierre Raybaut
 # Licensed under the terms of the MIT License
-# (see spyderlib/__init__.py for details)
+# (see SMlib/__init__.py for details)
 
 """
 IPython v0.13+ client's widget
 """
 
 # IPython imports
+'''
 try:  # 1.0
     from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
 except ImportError: # 0.13
     from IPython.frontend.qt.console.rich_ipython_widget import RichIPythonWidget
-
+'''
+from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
 # Qt imports
-from spyderlib.qt.QtGui import QTextEdit, QKeySequence, QShortcut
-from spyderlib.qt.QtCore import SIGNAL, Qt
-from spyderlib.utils.qthelpers import restore_keyevent
+from PyQt4.QtGui import QTextEdit, QKeySequence, QShortcut
+from PyQt4.QtCore import SIGNAL, Qt
+from SMlib.utils.qthelpers import restore_keyevent
 
 # Local imports
-from spyderlib.config import CONF
-from spyderlib.utils import programs
-from spyderlib.widgets.mixins import (BaseEditMixin, InspectObjectMixin,
+from SMlib.config import CONF
+from SMlib.utils import programs
+from SMlib.widgets.mixins import (BaseEditMixin, InspectObjectMixin,
                                       TracebackLinksMixin)
 
 
@@ -148,7 +150,7 @@ class SMIPythonWidget(RichIPythonWidget):
     #---- Public API ----------------------------------------------------------
     def set_ipyclient(self, ipyclient):
         """Bind this IPython widget to an IPython client widget
-        (see spyderlib/plugins/ipythonconsole.py)"""
+        (see SMlib/plugins/ipythonconsole.py)"""
         self.ipyclient = ipyclient
         self.exit_requested.connect(ipyclient.exit_callback)
     
