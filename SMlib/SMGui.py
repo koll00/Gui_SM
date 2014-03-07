@@ -4,6 +4,32 @@ import os.path as osp
 import atexit
 import shutil
 
+# Test if IPython v0.13+ is installed to eventually switch to PyQt API #2
+from SMlib.utils.programs import is_module_installed
+from SMlib.configs.baseconfig import _
+from SMlib.configs.ipythonconfig import IPYTHON_QT_MODULE, SUPPORTED_IPYTHON
+from SMlib import dependencies
+
+dependencies.add("IPython", _("IPython Console integration"),
+                 required_version=SUPPORTED_IPYTHON)
+
+if is_module_installed(IPYTHON_QT_MODULE, SUPPORTED_IPYTHON):
+    # Importing IPython will eventually set the QT_API environment variable
+    import IPython  # analysis:ignore
+    if os.environ.get('QT_API', 'pyqt') == 'pyqt':
+        # If PyQt is the selected GUI toolkit (at this stage, only the
+        # bootstrap script has eventually set this option), switch to 
+        # PyQt API #2 by simply importing the IPython qt module
+        os.environ['QT_API'] = 'pyqt'
+        try:
+            from IPython.external import qt  #analysis:ignore
+        except ImportError:
+            # Avoid raising any error here: the SMlib.requirements module
+            # will take care of it, in a user-friendly way (Tkinter message box
+            # if no GUI toolkit is installed)
+            pass
+
+
 from SMlib.plugins.ipythonConsole import IPythonConsole
 from SMlib.plugins.externalconsole import ExternalConsole
 
@@ -429,7 +455,7 @@ class MainWindow(QMainWindow):
             if self.inspector is not None:
                 #  The object inspector may be disabled in .spyder.ini
                 self.inspector.set_shell(shell)
-            from spyderlib.widgets.externalshell import pythonshell
+            from SMlib.widgets.externalshell import pythonshell
             if isinstance(shell, pythonshell.ExtPythonShellWidget):
                 shell = shell.parent()
             self.variableexplorer.set_shellwidget_from_id(id(shell))
@@ -767,8 +793,8 @@ class MainWindow(QMainWindow):
         if self.light:
             return self.extconsole
         widget = QApplication.focusWidget()
-        from spyderlib.widgets.editor import TextEditBaseWidget
-        from spyderlib.widgets.shell import ShellBaseWidget
+        from SMlib.widgets.editor import TextEditBaseWidget
+        from SMlib.widgets.shell import ShellBaseWidget
         if not isinstance(widget, (TextEditBaseWidget, ShellBaseWidget)):
             return
         for plugin in self.widgetlist:
@@ -777,7 +803,7 @@ class MainWindow(QMainWindow):
         else:
             # External Editor window
             plugin = widget
-            from spyderlib.widgets.editor import EditorWidget
+            from SMlib.widgets.editor import EditorWidget
             while not isinstance(plugin, EditorWidget):
                 plugin = plugin.parent()
             return plugin         
@@ -925,8 +951,8 @@ def get_focus_python_shell():
     """Extract and return Python shell from widget
     Return None if *widget* is not a Python shell (e.g. IPython kernel)"""
     widget = QApplication.focusWidget()
-    from spyderlib.widgets.shell import PythonShellWidget
-    from spyderlib.widgets.externalshell.pythonshell import ExternalPythonShell
+    from SMlib.widgets.shell import PythonShellWidget
+    from SMlib.widgets.externalshell.pythonshell import ExternalPythonShell
     if isinstance(widget, PythonShellWidget):
         return widget
     elif isinstance(widget, ExternalPythonShell):
@@ -937,8 +963,8 @@ def get_focus_widget_properties():
     Returns tuple (widget, properties) where properties is a tuple of
     booleans: (is_console, not_readonly, readwrite_editor)"""
     widget = QApplication.focusWidget()
-    from spyderlib.widgets.shell import ShellBaseWidget
-    from spyderlib.widgets.editor import TextEditBaseWidget
+    from SMlib.widgets.shell import ShellBaseWidget
+    from SMlib.widgets.editor import TextEditBaseWidget
     textedit_properties = None
     if isinstance(widget, (ShellBaseWidget, TextEditBaseWidget)):
         console = isinstance(widget, ShellBaseWidget)
