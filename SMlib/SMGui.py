@@ -2,13 +2,18 @@ import sys, os
 sys.path.append('..' + os.path.sep)
 import os.path as osp
 import atexit
+import socket
 import shutil
+import threading
 
 # Test if IPython v0.13+ is installed to eventually switch to PyQt API #2
 from SMlib.utils.programs import is_module_installed
+from SMlib.config import CONF, EDIT_EXT, OPEN_FILES_PORT
 from SMlib.configs.baseconfig import _
 from SMlib.configs.ipythonconfig import IPYTHON_QT_MODULE, SUPPORTED_IPYTHON
 from SMlib import dependencies
+from SMlib.utils import module_completion
+from SMlib.utils.misc import select_port
 
 dependencies.add("IPython", _("IPython Console integration"),
                  required_version=SUPPORTED_IPYTHON)
@@ -62,7 +67,7 @@ class MainWindow(QMainWindow):
         super(QMainWindow, self).__init__(parent)
         
         self.light = False
-        self.new_instance = True
+        self.new_instance = False
         # Shortcut management data
         self.shortcut_data = []
         
@@ -171,6 +176,11 @@ class MainWindow(QMainWindow):
         # The following flag remember the maximized state even when 
         # the window is in fullscreen mode:
         self.maximized_flag = None
+        
+         # Server to open external files on a single instance
+        self.open_files_server = socket.socket(socket.AF_INET,
+                                               socket.SOCK_STREAM,
+                                               socket.IPPROTO_TCP)
        
     def debug_print(self, message):
         """Debug prints"""
@@ -900,6 +910,7 @@ class MainWindow(QMainWindow):
     def post_visible_setup(self):
         """Actions to be performed only after the main window's `show` method 
         was triggered"""
+        print "post_visible_setup"
         self.emit(SIGNAL('restore_scrollbar_position()'))
         if self.projectexplorer is not None:
             self.projectexplorer.check_for_io_errors()
@@ -932,6 +943,7 @@ class MainWindow(QMainWindow):
         # Server to maintain just one Spyder instance and open files in it if
         # the user tries to start other instances with
         # $ spyder foo.py
+        print CONF.get('main', 'single_instance'), self.new_instance
         if CONF.get('main', 'single_instance') and not self.new_instance:
             t = threading.Thread(target=self.start_open_files_server)
             t.setDaemon(True)
@@ -966,6 +978,27 @@ class MainWindow(QMainWindow):
         sys_path = sys.path
         while sys_path[1] in self.get_spyder_pythonpath():
             sys_path.pop(1)
+    def start_open_files_server(self):
+        self.open_files_server.setsockopt(socket.SOL_SOCKET,
+                                          socket.SO_REUSEADDR, 1)
+        port = select_port(default_port=OPEN_FILES_PORT)
+        CONF.set('main', 'open_files_port', port)
+        self.open_files_server.bind(('127.0.0.1', port))
+        self.open_files_server.listen(20)
+        while 1:  # 1 is faster than True
+            try:
+                req, dummy = self.open_files_server.accept()
+            except socket.error as e:
+                # See Issue 1275 for details on why errno EINTR is
+                # silently ignored here.
+                eintr = errno.WSAEINTR if os.name == 'nt' else errno.EINTR
+                if e.args[0] == eintr:
+                    continue
+                raise
+            fname = req.recv(1024)
+            if not self.light:
+                self.emit(SIGNAL('open_external_file(QString)'), fname)
+            req.sendall(' ')
 #==============================================================================
 # Spyder's main window widgets utilities
 #==============================================================================
@@ -1006,7 +1039,7 @@ def run():
     main = MainWindow()
     main.setUp()
     main.show()
-   # main.post_visible_setup()
+    main.post_visible_setup()
     app.exec_()
     
     
