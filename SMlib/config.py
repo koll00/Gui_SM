@@ -14,6 +14,11 @@ from SMlib.configs import __version__
 from SMlib.configs.userconfig import UserConfig
 from SMlib.configs.baseconfig import SUBFOLDER, CHECK_ALL, EXCLUDED_NAMES, _
 
+
+# Port used to detect if there is a running instance and to communicate with
+# it to open external files
+OPEN_FILES_PORT = 21128
+
 SANS_SERIF = ['Sans Serif', 'DejaVu Sans', 'Bitstream Vera Sans',
               'Bitstream Charter', 'Lucida Grande', 'MS Shell Dlg 2',
               'Calibri', 'Verdana', 'Geneva', 'Lucid', 'Arial',
@@ -99,6 +104,7 @@ DEFAULTS = [
               'window/is_maximized': False,
               'window/is_fullscreen': False,
               'single_instance': True,
+              'open_files_port': OPEN_FILES_PORT,
               'tear_off_menus': False,
               'vertical_dockwidget_titlebars': False,
               'vertical_tabs': True,
