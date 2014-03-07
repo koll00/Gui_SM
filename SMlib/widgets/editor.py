@@ -2,7 +2,7 @@
 #
 # Copyright © 2009-2011 Pierre Raybaut
 # Licensed under the terms of the MIT License
-# (see spyderlib/__init__.py for details)
+# (see SMlib/__init__.py for details)
 
 """Editor Widget"""
 
@@ -11,15 +11,15 @@
 # pylint: disable=R0911
 # pylint: disable=R0201
 
-from PyQt4 import is_pyqt46
+#from PyQt4 import is_pyqt46
 from PyQt4.QtGui import (QVBoxLayout, QMessageBox, QMenu, QFont,
                                 QAction, QApplication, QWidget, QHBoxLayout,
                                 QLabel, QKeySequence, QShortcut, QMainWindow,
                                 QSplitter, QListWidget, QListWidgetItem,
                                 QDialog, QLineEdit)
-from PyQt4QtCore import (SIGNAL, Qt, QFileInfo, QThread, QObject,
+from PyQt4.QtCore import (SIGNAL, Qt, QFileInfo, QThread, QObject,
                                  QByteArray, QSize, QPoint, QTimer, Slot)
-from spyderlib.qt.compat import getsavefilename
+#from SMlib.qt.compat import getsavefilename
 
 import os
 import sys
@@ -27,24 +27,24 @@ import re
 import os.path as osp
 
 # Local imports
-from spyderlib.utils import encoding, sourcecode, programs, codeanalysis
-from spyderlib.utils.dochelpers import getsignaturesfromtext
-from spyderlib.utils.module_completion import (module_completion,
+from SMlib.utils import encoding, sourcecode, programs, codeanalysis
+from SMlib.utils.dochelpers import getsignaturesfromtext
+from SMlib.utils.module_completion import (module_completion,
                                                get_preferred_submodules)
-from spyderlib.baseconfig import _, DEBUG, STDOUT, STDERR
-from spyderlib.config import EDIT_FILTERS, EDIT_EXT, get_filter, EDIT_FILETYPES
-from spyderlib.utils.qthelpers import (get_icon, create_action, add_actions,
+from SMlib.configs.baseconfig import _, DEBUG, STDOUT, STDERR
+from SMlib.config import EDIT_FILTERS, EDIT_EXT, get_filter, EDIT_FILETYPES
+from SMlib.utils.qthelpers import (get_icon, create_action, add_actions,
                                        mimedata2url, get_filetype_icon,
-                                       create_toolbutton)
-from spyderlib.widgets.tabs import BaseTabs
-from spyderlib.widgets.findreplace import FindReplace
-from spyderlib.widgets.editortools import OutlineExplorerWidget
-from spyderlib.widgets.status import (ReadWriteStatus, EOLStatus,
+                                       create_toolbutton, getsavefilename )
+from SMlib.widgets.tabs import BaseTabs
+from SMlib.widgets.findreplace import FindReplace
+from SMlib.widgets.editortools import OutlineExplorerWidget
+from SMlib.widgets.status import (ReadWriteStatus, EOLStatus,
                                       EncodingStatus, CursorPositionStatus)
-from spyderlib.widgets.sourcecode import syntaxhighlighters, codeeditor
-from spyderlib.widgets.sourcecode.base import TextEditBaseWidget  #analysis:ignore
-from spyderlib.widgets.sourcecode.codeeditor import Printer  #analysis:ignore
-from spyderlib.widgets.sourcecode.codeeditor import get_file_language
+from SMlib.widgets.sourcecode import syntaxhighlighters, codeeditor
+from SMlib.widgets.sourcecode.base import TextEditBaseWidget  #analysis:ignore
+from SMlib.widgets.sourcecode.codeeditor import Printer  #analysis:ignore
+from SMlib.widgets.sourcecode.codeeditor import get_file_language
 
 
 DEBUG_EDITOR = DEBUG >= 3
@@ -2469,7 +2469,7 @@ class EditorPluginExample(QSplitter):
         pass
     
 def test():
-    from spyderlib.utils.qthelpers import qapplication
+    from SMlib.utils.qthelpers import qapplication
     app = qapplication()
     test = EditorPluginExample()
     test.resize(900, 700)
