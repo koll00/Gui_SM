@@ -574,7 +574,29 @@ class MainWindow(QMainWindow):
             # This is the editor and current file is writable
             for action in self.editor.edit_menu_actions:
                 action.setEnabled(True)
-                   
+                
+    def update_search_menu(self):
+        """Update search menu"""
+        if self.menuBar().hasFocus():
+            return        
+        # Disabling all actions to begin with
+        for child in [self.find_action, self.find_next_action,
+                      self.find_previous_action, self.replace_action]:
+            child.setEnabled(False)
+        
+        widget, textedit_properties = get_focus_widget_properties()
+        for action in self.editor.search_menu_actions:
+            action.setEnabled(self.editor.isAncestorOf(widget))
+        if textedit_properties is None: # widget is not an editor/console
+            return
+        #!!! Below this line, widget is expected to be a QPlainTextEdit instance
+        _x, _y, readwrite_editor = textedit_properties
+        for action in [self.find_action, self.find_next_action,
+                       self.find_previous_action]:
+            action.setEnabled(True)
+        self.replace_action.setEnabled(readwrite_editor)
+        self.replace_action.setEnabled(readwrite_editor)
+        
     def toggle_fullscreen(self):
         if self.isFullScreen():
             self.fullscreen_flag = False
