@@ -37,8 +37,11 @@ if is_module_installed(IPYTHON_QT_MODULE, SUPPORTED_IPYTHON):
 
 from SMlib.plugins.ipythonConsole import IPythonConsole
 from SMlib.plugins.externalconsole import ExternalConsole
+from SMlib.plugins.editor import Editor
+from SMlib.plugins.console import Console
 
-from PyQt4.QtGui import QMainWindow, QApplication, QAction,QDockWidget, QShortcut, QMenu, QMessageBox
+from PyQt4.QtGui import (QMainWindow, QApplication, QAction,QDockWidget, 
+                        QShortcut, QMenu, QMessageBox, QColor)
 
 from PyQt4.Qt import QKeySequence
 from PyQt4.QtCore import SIGNAL, Qt, QSize, QPoint,QByteArray
@@ -68,6 +71,8 @@ class MainWindow(QMainWindow):
         
         self.light = False
         self.new_instance = False
+        self.profile = False
+        self.multithreaded = False
         # Shortcut management data
         self.shortcut_data = []
         
@@ -194,6 +199,20 @@ class MainWindow(QMainWindow):
         self.createToolBars()
         self.createStatusBar()
         #self.initalStatus()
+        
+        namespace = None
+        # Internal console plugin
+        self.console = Console(self, namespace, exitfunc=self.closing,
+                                 profile=self.profile,
+                                 multithreaded=self.multithreaded,
+                                 message='Inspect Spyder internals:\n'\
+                                         '  spy.app, spy.window, dir(spy)')
+        self.console.register_plugin()
+        # Editor plugin
+#         self.set_splash(_("Loading editor..."))
+        self.editor = Editor(self)
+        self.editor.register_plugin()
+            
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
         
@@ -411,7 +430,16 @@ class MainWindow(QMainWindow):
         self.windows_toolbars_menu.clear()
         popmenu = self.createPopupMenu()
         add_actions(self.windows_toolbars_menu, popmenu.actions())
-
+        
+    def set_splash(self, message):
+        """Set splash message"""
+        if message:
+            self.debug_print(message)
+        self.splash.show()
+        self.splash.showMessage(message, Qt.AlignBottom | Qt.AlignCenter | 
+                                Qt.AlignAbsolute, QColor(Qt.white))
+        QApplication.processEvents()
+        
     def closeEvent(self, event):
         """closeEvent reimplementation"""
         if self.closing(True):
@@ -965,7 +993,27 @@ class MainWindow(QMainWindow):
         else:
             self.extconsole.open_interpreter_at_startup()
         self.extconsole.setMinimumHeight(0)
-
+        
+    def redirect_internalshell_stdio(self, state):
+        if state:
+            self.console.shell.interpreter.redirect_stds()
+        else:
+            self.console.shell.interpreter.restore_stds()
+            
+    def execute_in_external_console(self, lines, focus_to_editor):
+        """Execute lines in external or IPython console 
+        and eventually set focus to editor"""
+        console = self.extconsole
+        if self.ipyconsole is None\
+           or self.last_console_plugin_focus_was_python:
+            console = self.extconsole
+        else:
+            console = self.ipyconsole
+        console.visibility_changed(True)
+        console.raise_()
+        console.execute_python_code(lines)
+        if focus_to_editor:
+           self.editor.visibility_changed(True)
     #---- PYTHONPATH management, etc.
     def get_spyder_pythonpath(self):
         """Return Spyder PYTHONPATH"""
