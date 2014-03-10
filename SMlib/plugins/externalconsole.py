@@ -990,7 +990,7 @@ class ExternalConsole(SMPluginWidget):
         if self.dockwidget and not self.ismaximized and not ipykernel:
             self.dockwidget.setVisible(True)
             self.dockwidget.raise_()
-        
+        print self.get_option('show_icontext')
         shellwidget.set_icontext_visible(self.get_option('show_icontext'))
         
         # Start process and give focus to console
@@ -1049,7 +1049,7 @@ class ExternalConsole(SMPluginWidget):
             self.inspector.set_shell(shell.shell)
         if self.variableexplorer is not None:
             self.variableexplorer.add_shellwidget(shell)
-        
+        print shell_id, self
     def process_finished(self, shell_id):
         index = self.get_shell_index_from_id(shell_id)
         if index is not None:
@@ -1121,7 +1121,7 @@ class ExternalConsole(SMPluginWidget):
             if self.inspector is not None:
                 self.inspector.set_external_console(self)
             self.historylog = self.main.historylog
-            '''
+            
             self.connect(self, SIGNAL("edit_goto(QString,int,QString)"),
                          self.main.editor.load)
             self.connect(self, SIGNAL("edit_goto(QString,int,QString,bool)"),
@@ -1155,7 +1155,7 @@ class ExternalConsole(SMPluginWidget):
                              self.open_terminal)
                 self.connect(pexpl, SIGNAL("open_interpreter(QString)"),
                              self.open_interpreter)
-        '''
+
     def closing_plugin(self, cancelable=False):
         """Perform actions before parent main window is closed"""
         for shellwidget in self.shellwidgets:
