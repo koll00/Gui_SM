@@ -25,15 +25,15 @@ import re
 import os
 import os.path as osp
 import time
-'''
+
 from IPython.config.loader import Config, load_pyconfig_files
 from IPython.core.application import get_ipython_dir
 from IPython.lib.kernel import find_connection_file, get_connection_info
-#try:
-from IPython.qt.manager import QtKernelManager # 1.0
-#except ImportError:
-#    from IPython.frontend.qt.kernelmanager import QtKernelManager # 0.13
-   '''
+try:
+    from IPython.qt.manager import QtKernelManager # 1.0
+except ImportError:
+    from IPython.frontend.qt.kernelmanager import QtKernelManager # 0.13
+
     
 # Local imports
 from SMlib import dependencies
@@ -875,7 +875,7 @@ class IPythonConsole(SMPluginWidget):
         km, kc = self.create_kernel_manager_and_client(connection_file)
         if (km, kc) == (None, None):
             return None
-        #widget = SMIPythonWidget(config=config, local_kernel=False)
+        widget = SMIPythonWidget(config=config, local_kernel=False)
         widget.kernel_manager = km
         widget.kernel_client = kc
         return widget
