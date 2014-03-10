@@ -38,8 +38,7 @@ def _get_debug_env():
     if not debug_env.isdigit():
         debug_env = bool(debug_env)
     return int(debug_env)    
-#DEBUG = _get_debug_env()
-DEBUG = 1
+DEBUG = _get_debug_env()
 
 def debug_print(message):
     """Output debug messages to stdout"""
