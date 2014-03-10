@@ -584,7 +584,7 @@ class MainWindow(QMainWindow):
             # This is the editor and current file is writable
             for action in self.editor.edit_menu_actions:
                 action.setEnabled(True)
-                
+        
     def update_search_menu(self):
         """Update search menu"""
         if self.menuBar().hasFocus():
@@ -606,6 +606,8 @@ class MainWindow(QMainWindow):
             action.setEnabled(True)
         self.replace_action.setEnabled(readwrite_editor)
         self.replace_action.setEnabled(readwrite_editor)
+        
+
         
     def toggle_fullscreen(self):
         if self.isFullScreen():
