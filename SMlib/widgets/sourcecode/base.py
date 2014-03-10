@@ -281,8 +281,8 @@ class TextEditBaseWidget(QPlainTextEdit, BaseEditMixin):
     def highlight_current_line(self):
         """Highlight current line"""
         selection = QTextEdit.ExtraSelection()
-        selection.format.setProperty(QTextFormat.FullWidthSelection,
-                                     QVariant(True))
+#        selection.format.setProperty(QTextFormat.FullWidthSelection,
+#                                     QVariant(True))
         selection.format.setBackground(self.currentline_color)
         selection.cursor = self.textCursor()
         selection.cursor.clearSelection()
