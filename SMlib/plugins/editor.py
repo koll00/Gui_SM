@@ -527,7 +527,7 @@ class Editor(SMPluginWidget):
 
     def visibility_changed(self, enable):
         """DockWidget visibility has changed"""
-        SpyderPluginWidget.visibility_changed(self, enable)
+        SMPluginWidget.visibility_changed(self, enable)
         if self.dockwidget.isWindow():
             self.dock_toolbar.show()
         else:
