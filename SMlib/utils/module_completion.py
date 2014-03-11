@@ -27,8 +27,8 @@ from time import time
 import sys
 from zipimport import zipimporter
 
-from spyderlib.baseconfig import get_conf_path
-from spyderlib.utils.external.pickleshare import PickleShareDB
+from SMlib.configs.baseconfig import get_conf_path
+from SMlib.utils.external.pickleshare import PickleShareDB
 
 #-----------------------------------------------------------------------------
 # Globals and constants
