@@ -929,7 +929,6 @@ class ExternalConsole(SMPluginWidget):
                                                        interpreter=pyexec)
                     else:
                         kernel_and_frontend_match = True
-                    print kernel_and_frontend_match
                     # Create a a kernel tab only if frontend and kernel
                     # versions match
                     if kernel_and_frontend_match:
@@ -973,6 +972,7 @@ class ExternalConsole(SMPluginWidget):
             tab_icon1 = get_icon('cmdprompt.png')
             tab_icon2 = get_icon('cmdprompt_t.png')
         self.shellwidgets.insert(index, shellwidget)
+        
         self.filenames.insert(index, fname)
         self.icons.insert(index, (tab_icon1, tab_icon2))
         if index is None:
@@ -1213,6 +1213,7 @@ class ExternalConsole(SMPluginWidget):
         """Open an interpreter or an IPython kernel at startup"""
         if self.get_option('open_python_at_startup', True):
             self.open_interpreter()
+            
         if CONF.get('ipython_console', 'open_ipython_at_startup', False):
             if self.main.ipyconsole is None:
                 suffix = SUPPORTED_IPYTHON.replace(';', _(' and ')
