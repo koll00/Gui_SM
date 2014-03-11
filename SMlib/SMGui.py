@@ -39,6 +39,8 @@ from SMlib.plugins.ipythonConsole import IPythonConsole
 from SMlib.plugins.externalconsole import ExternalConsole
 from SMlib.plugins.editor import Editor
 from SMlib.plugins.console import Console
+from SMlib.plugins.workingdirectory import WorkingDirectory
+#from SMlib.plugins.variableexplorer import VariableExplorer
 
 from PyQt4.QtGui import (QMainWindow, QApplication, QAction,QDockWidget, 
                         QShortcut, QMenu, QMessageBox, QColor)
@@ -62,6 +64,9 @@ from SMlib.utils.qthelpers import (create_action, add_actions, get_icon,
                                        create_python_script_action, file_uri, from_qvariant)
 from SMlib.utils import encoding, programs
 
+# Get the cwd before initializing WorkingDirectory, which sets it to the one
+# used in the last session
+CWD = os.getcwd()
 
 class MainWindow(QMainWindow):
     SM_path = get_conf_path('.path')
@@ -73,6 +78,7 @@ class MainWindow(QMainWindow):
         self.new_instance = False
         self.profile = False
         self.multithreaded = False
+        self.init_workdir = None
         # Shortcut management data
         self.shortcut_data = []
         
@@ -208,6 +214,11 @@ class MainWindow(QMainWindow):
                                  message='Inspect Spyder internals:\n'\
                                          '  spy.app, spy.window, dir(spy)')
         self.console.register_plugin()
+        
+        # Working directory plugin
+        self.workingdirectory = WorkingDirectory(self, self.init_workdir)
+        self.workingdirectory.register_plugin()
+            
         # Editor plugin
 #         self.set_splash(_("Loading editor..."))
         self.editor = Editor(self)
@@ -215,6 +226,18 @@ class MainWindow(QMainWindow):
             
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
+        
+        '''
+        # Namespace browser
+        if not self.light:
+            # In light mode, namespace browser is opened inside external console
+            # Here, it is opened as an independent plugin, in its own dockwidget
+            #self.set_splash(_("Loading namespace browser..."))
+            self.variableexplorer = VariableExplorer(self)
+            self.variableexplorer.register_plugin()
+            print self.variableexplorer
+        '''
+        
         
         if is_module_installed(IPYTHON_QT_MODULE, SUPPORTED_IPYTHON):
             self.ipyconsole = IPythonConsole(self)
@@ -919,7 +942,7 @@ class MainWindow(QMainWindow):
     
     def tabify_plugins(self, first, second):
         """Tabify plugin dockwigdets"""
-        print self.tabifyDockWidget(first.dockwidget, second.dockwidget)
+        self.tabifyDockWidget(first.dockwidget, second.dockwidget)
         
     def remove_tmpdir(self):
         """Remove Spyder temporary directory"""
@@ -949,7 +972,6 @@ class MainWindow(QMainWindow):
     def post_visible_setup(self):
         """Actions to be performed only after the main window's `show` method 
         was triggered"""
-        print "post_visible_setup"
         self.emit(SIGNAL('restore_scrollbar_position()'))
         if self.projectexplorer is not None:
             self.projectexplorer.check_for_io_errors()
@@ -982,7 +1004,6 @@ class MainWindow(QMainWindow):
         # Server to maintain just one Spyder instance and open files in it if
         # the user tries to start other instances with
         # $ spyder foo.py
-        #print CONF.get('main', 'single_instance'), self.new_instance
         if CONF.get('main', 'single_instance') and not self.new_instance:
             t = threading.Thread(target=self.start_open_files_server)
             t.setDaemon(True)
