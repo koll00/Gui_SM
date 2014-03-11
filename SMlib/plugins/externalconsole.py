@@ -24,7 +24,7 @@ import os
 import os.path as osp
 import re
 import sys
-
+sys.path.append('..' + os.path.sep+'..' + os.path.sep)
 # Local imports
 from SMlib.configs.baseconfig import _#, SCIENTIFIC_STARTUP
 from SMlib.configs.ipythonconfig import SUPPORTED_IPYTHON
@@ -39,6 +39,7 @@ from SMlib.widgets.externalshell.systemshell import ExternalSystemShell
 from SMlib.widgets.findreplace import FindReplace
 from SMlib.plugins import SMPluginWidget, PluginConfigPage
 from SMlib import dependencies
+from SMlib import mpl_patch
 
 MPL_REQVER = '>=1.0'
 dependencies.add("matplotlib", _("Interactive data plotting"),
@@ -47,7 +48,7 @@ dependencies.add("matplotlib", _("Interactive data plotting"),
 def is_mpl_patch_available():
     """Return True if Matplotlib patch is available"""
     if programs.is_module_installed('matplotlib'):
-        from SMlib import mpl_patch
+#         from SMlib import mpl_patch
         return mpl_patch.is_available()
     else:
         return False
@@ -990,7 +991,6 @@ class ExternalConsole(SMPluginWidget):
         if self.dockwidget and not self.ismaximized and not ipykernel:
             self.dockwidget.setVisible(True)
             self.dockwidget.raise_()
-        print self.get_option('show_icontext')
         shellwidget.set_icontext_visible(self.get_option('show_icontext'))
         
         # Start process and give focus to console
@@ -1049,7 +1049,7 @@ class ExternalConsole(SMPluginWidget):
             self.inspector.set_shell(shell.shell)
         if self.variableexplorer is not None:
             self.variableexplorer.add_shellwidget(shell)
-        print shell_id, self
+            
     def process_finished(self, shell_id):
         index = self.get_shell_index_from_id(shell_id)
         if index is not None:
