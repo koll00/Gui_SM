@@ -60,15 +60,12 @@ class IntrospectionServer(threading.Thread):
         sock = socket.socket(socket.AF_INET)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind( ("127.0.0.1", self.port) )
-        print "introspection run"
-        print self
+        
         while True:
             sock.listen(2)
-            print "out try"
+            
             try:
                 conn, _addr = sock.accept()
-                print "in try"
-                print conn, _addr
             except socket.error as e:
                 # See Issue 1275 for details on why errno EINTR is
                 # silently ignored here.
@@ -78,7 +75,6 @@ class IntrospectionServer(threading.Thread):
                 raise
             shell_id = read_packet(conn)
             
-            print shell_id is None
             if shell_id is not None:
                 self.send_socket(shell_id, conn)
 
@@ -93,7 +89,6 @@ class NotificationServer(IntrospectionServer):
         See pythonshell.ExternalPythonShell.create_process"""
         IntrospectionServer.register(self, shell)
         shell_id = str(id(shell))
-        print "noticicationserver ", shell_id
         n_thread = self.notification_threads[shell_id] = NotificationThread()
         return n_thread
     
@@ -139,7 +134,6 @@ def start_notification_server():
     if NOTIFICATION_SERVER is None:
         NOTIFICATION_SERVER = NotificationServer()
         NOTIFICATION_SERVER.start()
-        print "instance server"
     return NOTIFICATION_SERVER
 
 
@@ -156,7 +150,6 @@ class NotificationThread(QThread):
         
     def run(self):
         """Start notification thread"""
-        print "run notification thread"
         while True:
             if self.notify_socket is None:
                 continue

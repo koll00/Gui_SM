@@ -195,6 +195,23 @@ DEFAULTS = [
               'in_prompt': '',
               'out_prompt': ''
               }),
+            ('variable_explorer',
+             {
+              'shortcut': "Ctrl+Shift+V",
+              'autorefresh': True,
+              'autorefresh/timeout': 2000,
+              'check_all': CHECK_ALL,
+              'excluded_names': EXCLUDED_NAMES,
+              'exclude_private': True,
+              'exclude_uppercase': True,
+              'exclude_capitalized': False,
+              'exclude_unsupported': True,
+              'inplace': False,
+              'truncate': True,
+              'minmax': False,
+              'collvalue': False,
+              'remote_editing': False,
+              }),
             ('historylog',
              {
               'shortcut': "Ctrl+Shift+H",

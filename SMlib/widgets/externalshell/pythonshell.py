@@ -411,7 +411,7 @@ The process may not exit as a result of clicking this button
             env.append('SPYDER_SHELL_ID=%s' % id(self))
             env.append('SPYDER_AR_TIMEOUT=%d' % self.autorefresh_timeout)
             env.append('SPYDER_AR_STATE=%r' % self.autorefresh_state)
-            from spyderlib.widgets.externalshell import introspection
+            from SMlib.widgets.externalshell import introspection
             introspection_server = introspection.start_introspection_server()
             introspection_server.register(self)
             notification_server = introspection.start_notification_server()

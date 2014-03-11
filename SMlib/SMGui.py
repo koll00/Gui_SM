@@ -197,9 +197,18 @@ class MainWindow(QMainWindow):
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
         
+        if is_module_installed(IPYTHON_QT_MODULE, SUPPORTED_IPYTHON):
+            self.ipyconsole = IPythonConsole(self)
+            self.ipyconsole.register_plugin()
         
-        self.ipyconsole = IPythonConsole(self)
-        self.ipyconsole.register_plugin()
+        
+        # Apply all defined shortcuts (plugins + 3rd-party plugins)
+        self.apply_shortcuts()
+        self.remove_deprecated_shortcuts()
+        
+        # Emitting the signal notifying plugins that main window menu and 
+        # toolbar actions are all defined:
+        self.emit(SIGNAL('all_actions_defined()'))
         
         # Window set-up
         self.debug_print("Setting up window...")
@@ -945,7 +954,7 @@ class MainWindow(QMainWindow):
         # Server to maintain just one Spyder instance and open files in it if
         # the user tries to start other instances with
         # $ spyder foo.py
-        print CONF.get('main', 'single_instance'), self.new_instance
+        #print CONF.get('main', 'single_instance'), self.new_instance
         if CONF.get('main', 'single_instance') and not self.new_instance:
             t = threading.Thread(target=self.start_open_files_server)
             t.setDaemon(True)
