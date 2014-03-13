@@ -40,7 +40,7 @@ from SMlib.plugins.externalconsole import ExternalConsole
 from SMlib.plugins.editor import Editor
 from SMlib.plugins.console import Console
 from SMlib.plugins.workingdirectory import WorkingDirectory
-#from SMlib.plugins.variableexplorer import VariableExplorer
+from SMlib.plugins.variableexplorer import VariableExplorer
 
 from PyQt4.QtGui import (QMainWindow, QApplication, QAction,QDockWidget, 
                         QShortcut, QMenu, QMessageBox, QColor)
@@ -48,7 +48,7 @@ from PyQt4.QtGui import (QMainWindow, QApplication, QAction,QDockWidget,
 from PyQt4.Qt import QKeySequence
 from PyQt4.QtCore import SIGNAL, Qt, QSize, QPoint,QByteArray
 
-
+from SMlib.widgets.status import MemoryStatus, CPUStatus
 from SMlib.configs.baseconfig import debug_print, _, TEST, get_conf_path
 from SMlib.configs.userconfig import NoDefault 
 from SMlib.configs.guiconfig import get_shortcut, remove_deprecated_shortcuts
@@ -70,9 +70,13 @@ CWD = os.getcwd()
 
 class MainWindow(QMainWindow):
     SM_path = get_conf_path('.path')
+    DOCKOPTIONS = QMainWindow.AllowTabbedDocks|QMainWindow.AllowNestedDocks
     
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
+        
+        qapp = QApplication.instance()
+        self.default_style = str(qapp.style().objectName())
         
         self.light = False
         self.new_instance = False
@@ -165,7 +169,11 @@ class MainWindow(QMainWindow):
         self.windows_toolbars_menu = None
         self.help_menu = None
         self.help_menu_actions = []
-        ''
+        
+        # Status bar widgets
+        self.mem_status = None
+        self.cpu_status = None
+        
         # List of satellite widgets (registered in add_dockwidget):
         self.widgetlist = []
         
@@ -188,10 +196,18 @@ class MainWindow(QMainWindow):
         # the window is in fullscreen mode:
         self.maximized_flag = None
         
+        
+                # Track which console plugin type had last focus
+        # True: Console plugin
+        # False: IPython console plugin
+        self.last_console_plugin_focus_was_python = True
+        
          # Server to open external files on a single instance
         self.open_files_server = socket.socket(socket.AF_INET,
                                                socket.SOCK_STREAM,
                                                socket.IPPROTO_TCP)
+        self.apply_settings()
+        self.debug_print("End of MainWindow constructor")
        
     def debug_print(self, message):
         """Debug prints"""
@@ -207,6 +223,7 @@ class MainWindow(QMainWindow):
         #self.initalStatus()
         
         namespace = None
+        
         # Internal console plugin
         self.console = Console(self, namespace, exitfunc=self.closing,
                                  profile=self.profile,
@@ -218,7 +235,7 @@ class MainWindow(QMainWindow):
         # Working directory plugin
         self.workingdirectory = WorkingDirectory(self, self.init_workdir)
         self.workingdirectory.register_plugin()
-            
+        
         # Editor plugin
 #         self.set_splash(_("Loading editor..."))
         self.editor = Editor(self)
@@ -227,7 +244,7 @@ class MainWindow(QMainWindow):
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
         
-        '''
+        
         # Namespace browser
         if not self.light:
             # In light mode, namespace browser is opened inside external console
@@ -235,13 +252,17 @@ class MainWindow(QMainWindow):
             #self.set_splash(_("Loading namespace browser..."))
             self.variableexplorer = VariableExplorer(self)
             self.variableexplorer.register_plugin()
-            print self.variableexplorer
-        '''
         
         
         if is_module_installed(IPYTHON_QT_MODULE, SUPPORTED_IPYTHON):
             self.ipyconsole = IPythonConsole(self)
             self.ipyconsole.register_plugin()
+        
+        if self.light :
+        # Status bar widgets
+            self.mem_status = MemoryStatus(self, status)
+            self.cpu_status = CPUStatus(self, status)
+            self.apply_statusbar_settings()
         
         
         # Apply all defined shortcuts (plugins + 3rd-party plugins)
@@ -340,44 +361,7 @@ class MainWindow(QMainWindow):
         self.search_toolbar_actions = [self.find_action,
                                            self.find_next_action,
                                            self.replace_action]
-        '''    
-#         self.undo_action = QtGui.QAction(QtGui.QIcon(':/icons/undo.png'),
-#                                          "&Undo", self, shortcut="Ctrl+Z",
-#                                          statusTip="undo the operation",
-#                                          triggered=self.undo)
-
-        def create_edit_action(text, tr_text, icon_name):
-                textseq = text.split(' ')
-                method_name = textseq[0].lower()+"".join(textseq[1:])
-                return create_action(self, tr_text,
-                                     shortcut=keybinding(text.replace(' ', '')),
-                                     icon=get_icon(icon_name),
-                                     triggered=self.global_callback,
-                                     data=method_name,
-                                     context=Qt.WidgetShortcut)
-                
-        self.undo_action = create_edit_action("Undo", _("Undo"),
-                                                  'undo.png')
-        self.redo_action = QtGui.QAction(QtGui.QIcon(':/icons/redo.png'),
-                                         "&Redo", self, shortcut="Ctrl+Y",
-                                         statusTip="redo the operation",
-                                         triggered=self.redo)
         
-        self.edit_menu_actions = [self.undo_action, self.redo_action,
-                                      None, self.cut_action, self.copy_action,
-                                      self.paste_action]
-        
-        quit_action = QtGui.QAction(QtGui.QIcon(':/icons/redo.png'),
-                                         "&Quit", self, shortcut="Ctrl+Q",
-                                         statusTip="Quit",
-                                         triggered=self.redo)
-        self.file_menu_actions += [quit_action]
-#         self.newConsoleAct = QtGui.QAction(QtGui.QIcon(':/icons/new.png'), "&Console",
-#                 self, statusTip="Create a new console", triggered=self.newConsole)
-#         
-#         self.newMonitorAct = QtGui.QAction(QtGui.QIcon(':/icons/new.png'), "&Monitor",
-#                 self, statusTip="Create a new console", triggered=self.newMonitor)
-'''
         # Maximize current plugin
         self.maximize_action = create_action(self, '',
                                             triggered=self.maximize_dockwidget)
@@ -968,6 +952,14 @@ class MainWindow(QMainWindow):
             child.update_margins()
         
         self.apply_statusbar_settings()
+        
+    def apply_statusbar_settings(self):
+        """Update status bar widgets settings"""
+        for widget, name in ((self.mem_status, 'memory_usage'),
+                             (self.cpu_status, 'cpu_usage')):
+            if widget is not None:
+                widget.setVisible(CONF.get('main', '%s/enable' % name))
+                widget.set_interval(CONF.get('main', '%s/timeout' % name))
         
     def post_visible_setup(self):
         """Actions to be performed only after the main window's `show` method 
