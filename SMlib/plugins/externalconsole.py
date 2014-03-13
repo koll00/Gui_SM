@@ -24,7 +24,7 @@ import os
 import os.path as osp
 import re
 import sys
-sys.path.append('..' + os.path.sep+'..' + os.path.sep)
+
 # Local imports
 from SMlib.configs.baseconfig import _#, SCIENTIFIC_STARTUP
 from SMlib.configs.ipythonconfig import SUPPORTED_IPYTHON
@@ -1136,9 +1136,11 @@ class ExternalConsole(SMPluginWidget):
                          self.set_spyder_breakpoints)
             self.connect(self.main.editor, SIGNAL("open_dir(QString)"),
                          self.set_current_shell_working_directory)
+            '''
             self.connect(self.main.workingdirectory,
                          SIGNAL("set_current_console_wd(QString)"),
                          self.set_current_shell_working_directory)
+                         '''
             self.connect(self, SIGNAL('focus_changed()'),
                          self.main.plugin_focus_changed)
             self.connect(self, SIGNAL('redirect_stdio(bool)'),
