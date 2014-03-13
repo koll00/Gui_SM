@@ -29,7 +29,7 @@ from SMlib.widgets.externalshell.monitor import communicate, write_packet
 from SMlib.widgets.externalshell.baseshell import (ExternalShellBase,
                                                    add_pathlist_to_PYTHONPATH)
 from SMlib.widgets.dicteditor import DictEditor
-
+from SMlib.widgets.externalshell import introspection
 
 class ExtPythonShellWidget(PythonShellWidget):
     def __init__(self, parent, history_filename, profile=False):
