@@ -107,8 +107,18 @@ DEFAULTS = [
               'open_files_port': OPEN_FILES_PORT,
               'tear_off_menus': False,
               'vertical_dockwidget_titlebars': False,
-              'vertical_tabs': True,
+              'vertical_tabs': False,
               'animated_docks': True,
+              # The following setting is currently not used but necessary from 
+              # a programmatical point of view (see spyder.py):
+              # (may become useful in the future if we add a button to change 
+              # settings within the "light mode")
+              'lightwindow/prefs_dialog_size': (745, 411),
+
+              'memory_usage/enable': True,
+              'memory_usage/timeout': 2000,
+              'cpu_usage/enable': False,
+              'cpu_usage/timeout': 2000,
               }
              ),
             ('editor_appearance',
