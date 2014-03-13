@@ -436,6 +436,8 @@ def show_std_icons():
     sys.exit(app.exec_())
 
 def from_qvariant(qobj=None, convfunc=None):
+        '''
+        api 1
         """Convert QVariant object to Python object"""
         assert callable(convfunc)
         if convfunc in (unicode, str):
@@ -448,6 +450,8 @@ def from_qvariant(qobj=None, convfunc=None):
             return qobj.toDouble()[0]
         else:
             return convfunc(qobj)
+        '''
+        return qobj
 def to_qvariant(obj=None):  # analysis:ignore
         return obj
     
