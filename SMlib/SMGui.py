@@ -41,6 +41,7 @@ from SMlib.plugins.editor import Editor
 from SMlib.plugins.console import Console
 from SMlib.plugins.workingdirectory import WorkingDirectory
 from SMlib.plugins.variableexplorer import VariableExplorer
+from SMlib.plugins.inspector import ObjectInspector
 
 from PyQt4.QtGui import (QMainWindow, QApplication, QAction,QDockWidget, 
                         QShortcut, QMenu, QMessageBox, QColor)
@@ -236,6 +237,12 @@ class MainWindow(QMainWindow):
         self.workingdirectory = WorkingDirectory(self, self.init_workdir)
         self.workingdirectory.register_plugin()
         
+         # Object inspector plugin
+        if CONF.get('inspector', 'enable'):
+            #self.set_splash(_("Loading object inspector..."))
+            self.inspector = ObjectInspector(self)
+            self.inspector.register_plugin()
+                
         # Editor plugin
 #         self.set_splash(_("Loading editor..."))
         self.editor = Editor(self)
