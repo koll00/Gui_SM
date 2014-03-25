@@ -1081,6 +1081,33 @@ class MainWindow(QMainWindow):
             if not self.light:
                 self.emit(SIGNAL('open_external_file(QString)'), fname)
             req.sendall(' ')
+
+    def open_file(self, fname, external=False):
+        """
+        Open filename with the appropriate application
+        Redirect to the right widget (txt -> editor, spydata -> workspace, ...)
+        or open file outside Spyder (if extension is not supported)
+        """
+        fname = unicode(fname)
+        ext = osp.splitext(fname)[1]
+        if ext in EDIT_EXT:
+            self.editor.load(fname)
+        elif self.variableexplorer is not None and ext in IMPORT_EXT\
+             and ext in ('.spydata', '.mat', '.npy', '.h5'):
+            self.variableexplorer.import_data(fname)
+        elif not external:
+            fname = file_uri(fname)
+            programs.start_file(fname)
+            
+    def open_external_file(self, fname):
+        """
+        Open external files that can be handled either by the Editor or the
+        variable explorer inside Spyder.
+        """
+        if osp.isfile(fname):
+            self.open_file(fname, external=True)
+        elif osp.isfile(osp.join(CWD, fname)):
+            self.open_file(osp.join(CWD, fname), external=True)
 #==============================================================================
 # Spyder's main window widgets utilities
 #==============================================================================
