@@ -234,23 +234,24 @@ class MainWindow(QMainWindow):
         self.console.register_plugin()
         
         # Working directory plugin
-        self.workingdirectory = WorkingDirectory(self, self.init_workdir)
-        self.workingdirectory.register_plugin()
+        #self.workingdirectory = WorkingDirectory(self, self.init_workdir)
+        #self.workingdirectory.register_plugin()
         
          # Object inspector plugin
         if CONF.get('inspector', 'enable'):
             #self.set_splash(_("Loading object inspector..."))
             self.inspector = ObjectInspector(self)
             self.inspector.register_plugin()
-                
+         
         # Editor plugin
 #         self.set_splash(_("Loading editor..."))
         self.editor = Editor(self)
         self.editor.register_plugin()
             
+        
+        
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
-        
         
         # Namespace browser
         if not self.light:
@@ -259,6 +260,8 @@ class MainWindow(QMainWindow):
             #self.set_splash(_("Loading namespace browser..."))
             self.variableexplorer = VariableExplorer(self)
             self.variableexplorer.register_plugin()
+        
+        
         
         
         if is_module_installed(IPYTHON_QT_MODULE, SUPPORTED_IPYTHON):
