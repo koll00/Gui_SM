@@ -43,6 +43,7 @@ from SMlib.plugins.console import Console
 from SMlib.plugins.workingdirectory import WorkingDirectory
 from SMlib.plugins.variableexplorer import VariableExplorer
 from SMlib.plugins.inspector import ObjectInspector
+from SMlib.plugins.findinfiles import FindInFiles
 
 from PyQt4.QtGui import (QMainWindow, QApplication, QAction,QDockWidget, 
                         QShortcut, QMenu, QMessageBox, QColor)
@@ -218,9 +219,7 @@ class MainWindow(QMainWindow):
         """Setup main window"""
         
         self.createActions()
-        self.createMenus()
-        self.createToolBars()
-        self.createStatusBar()
+        
         #self.initalStatus()
         
         namespace = None
@@ -234,8 +233,8 @@ class MainWindow(QMainWindow):
         self.console.register_plugin()
         
         # Working directory plugin
-        #self.workingdirectory = WorkingDirectory(self, self.init_workdir)
-        #self.workingdirectory.register_plugin()
+        self.workingdirectory = WorkingDirectory(self, self.init_workdir)
+        self.workingdirectory.register_plugin()
         
          # Object inspector plugin
         if CONF.get('inspector', 'enable'):
@@ -249,6 +248,10 @@ class MainWindow(QMainWindow):
         self.editor.register_plugin()
             
         
+        # Find in files
+        #if CONF.get('find_in_files', 'enable'):
+        self.findinfiles = FindInFiles(self)
+        self.findinfiles.register_plugin()
         
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
@@ -274,7 +277,9 @@ class MainWindow(QMainWindow):
             self.cpu_status = CPUStatus(self, status)
             self.apply_statusbar_settings()
         
-        
+        self.createMenus()
+        self.createToolBars()
+        self.createStatusBar()
         # Apply all defined shortcuts (plugins + 3rd-party plugins)
         self.apply_shortcuts()
         self.remove_deprecated_shortcuts()
@@ -761,14 +766,13 @@ class MainWindow(QMainWindow):
                 if first is not None and second is not None:
                     self.tabify_plugins(first, second)
                     
-            '''
             for plugin in [self.findinfiles, self.onlinehelp, self.console,]+self.thirdparty_plugins:
                 if plugin is not None:
                     plugin.dockwidget.close()
             for plugin in (self.inspector, self.extconsole):
                 if plugin is not None:
                     plugin.dockwidget.raise_()
-                    '''
+                    
             self.extconsole.setMinimumHeight(250)
             hidden_toolbars = [self.source_toolbar, self.edit_toolbar,
                                self.search_toolbar]
