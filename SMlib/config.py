@@ -97,6 +97,14 @@ EDIT_EXT = _get_extensions(EDIT_FILETYPES)+['']
 # Extensions supported by Spyder's Variable explorer
 IMPORT_EXT = iofuncs.iofunctions.load_extensions.values()
 
+# Find in files include/exclude patterns
+INCLUDE_PATTERNS = [r'|'.join(['\\'+_ext+r'$' for _ext in EDIT_EXT if _ext])+\
+                    r'|README|INSTALL',
+                    r'\.pyw?$|\.ipy$|\.txt$|\.rst$',
+                    '.']
+EXCLUDE_PATTERNS = [r'\.pyc$|\.pyo$|\.orig$|\.hg|\.svn|\bbuild\b',
+                    r'\.pyc$|\.pyo$|\.orig$|\.hg|\.svn']
+
 DEFAULTS = [
             ('main',
              {
@@ -346,7 +354,21 @@ DEFAULTS = [
               'completion/font/italic': False,
               'completion/font/bold': False,
               'completion/size': (300, 180),
-              })
+              }),
+            ('find_in_files',
+             {
+              'enable': True,
+              'supported_encodings': ["utf-8", "iso-8859-1", "cp1252"],
+              'include': INCLUDE_PATTERNS,
+              'include_regexp': True,
+              'exclude': EXCLUDE_PATTERNS,
+              'exclude_regexp': True,
+              'search_text_regexp': True,
+              'search_text': [''],
+              'search_text_samples': [codeanalysis.TASKS_PATTERN],
+              'in_python_path': False,
+              'more_options': True,
+              }),
             ]
 CONF = UserConfig('SMGui', defaults=DEFAULTS, load=True, version= __version__,
                   subfolder=SUBFOLDER, backup=True, raw_mode=True)
