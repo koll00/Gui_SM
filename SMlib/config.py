@@ -13,7 +13,7 @@ from SMlib.configs import __version__
 
 from SMlib.configs.userconfig import UserConfig
 from SMlib.configs.baseconfig import SUBFOLDER, CHECK_ALL, EXCLUDED_NAMES, _
-
+from SMlib.utils import iofuncs, codeanalysis
 
 # Port used to detect if there is a running instance and to communicate with
 # it to open external files
@@ -94,6 +94,8 @@ def get_filter(filetypes, ext):
 EDIT_FILTERS = _get_filters(EDIT_FILETYPES)
 EDIT_EXT = _get_extensions(EDIT_FILETYPES)+['']
 
+# Extensions supported by Spyder's Variable explorer
+IMPORT_EXT = iofuncs.iofunctions.load_extensions.values()
 
 DEFAULTS = [
             ('main',
