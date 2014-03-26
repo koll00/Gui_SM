@@ -5,10 +5,11 @@ import atexit
 import socket
 import shutil
 import threading
+import errno
 
 # Test if IPython v0.13+ is installed to eventually switch to PyQt API #2
 from SMlib.utils.programs import is_module_installed
-from SMlib.config import CONF, EDIT_EXT, OPEN_FILES_PORT
+from SMlib.config import CONF, EDIT_EXT, OPEN_FILES_PORT, IMPORT_EXT
 from SMlib.configs.baseconfig import _
 from SMlib.configs.ipythonconfig import IPYTHON_QT_MODULE, SUPPORTED_IPYTHON
 from SMlib import dependencies
@@ -53,7 +54,6 @@ from SMlib.widgets.status import MemoryStatus, CPUStatus
 from SMlib.configs.baseconfig import debug_print, _, TEST, get_conf_path
 from SMlib.configs.userconfig import NoDefault 
 from SMlib.configs.guiconfig import get_shortcut, remove_deprecated_shortcuts
-from SMlib.config import CONF
 from SMlib.py3compat import qbytearray_to_str
 from SMlib.configs.baseconfig import debug_print
 from SMlib.utils.qthelpers import (create_action, add_actions, get_icon,
@@ -546,14 +546,6 @@ class MainWindow(QMainWindow):
                         self.extconsole.tabwidget.setCurrentWidget(kw)
                         focus_client.get_control().setFocus()
                         
-    def global_callback(self):
-        """Global callback"""
-        widget = QApplication.focusWidget()
-        action = self.sender()
-        callback = from_qvariant(action.data(), unicode)
-        from SMlib.widgets.sourcecode.base import TextEditBaseWidget
-        if isinstance(widget, TextEditBaseWidget):
-            getattr(widget, callback)()
             
     def maximize_dockwidget(self, restore=False):
         """Shortcut: Ctrl+Alt+Shift+M
@@ -874,7 +866,6 @@ class MainWindow(QMainWindow):
             CONF.set(section, prefix+'statusbar',not self.statusBar().isHidden())
 
     #---- Global callbacks (called from plugins)
-    '''
     def get_current_editor_plugin(self):
         """Return editor plugin which has focus:
         console, extconsole, editor, inspector or historylog"""
@@ -895,7 +886,7 @@ class MainWindow(QMainWindow):
             while not isinstance(plugin, EditorWidget):
                 plugin = plugin.parent()
             return plugin         
-    '''
+    
     def find(self):
         """Global find callback"""
         plugin = self.get_current_editor_plugin()
@@ -921,7 +912,86 @@ class MainWindow(QMainWindow):
         plugin = self.find()
         if plugin is not None:
             plugin.find_widget.show_replace()
+
+    def global_callback(self):
+        """Global callback"""
+        widget = QApplication.focusWidget()
+        action = self.sender()
+        callback = from_qvariant(action.data(), unicode)
+        from SMlib.widgets.editor import TextEditBaseWidget
+        if isinstance(widget, TextEditBaseWidget):
+            getattr(widget, callback)()
         
+    def redirect_internalshell_stdio(self, state):
+        if state:
+            self.console.shell.interpreter.redirect_stds()
+        else:
+            self.console.shell.interpreter.restore_stds()
+        
+    def open_external_console(self, fname, wdir, args, interact, debug, python,
+                              python_args, systerm):
+        """Open external console"""
+        if systerm:
+            # Running script in an external system terminal
+            try:
+                programs.run_python_script_in_terminal(fname, wdir, args,
+                                                interact, debug, python_args)
+            except NotImplementedError:
+                QMessageBox.critical(self, _("Run"),
+                                     _("Running an external system terminal "
+                                       "is not supported on platform %s."
+                                       ) % os.name)
+        else:
+            self.extconsole.visibility_changed(True)
+            self.extconsole.raise_()
+            self.extconsole.start(
+                fname=unicode(fname), wdir=unicode(wdir), args=unicode(args),
+                interact=interact, debug=debug, python=python,
+                python_args=unicode(python_args) )
+        
+    def execute_in_external_console(self, lines, focus_to_editor):
+        """Execute lines in external or IPython console 
+        and eventually set focus to editor"""
+        console = self.extconsole
+        if self.ipyconsole is None\
+           or self.last_console_plugin_focus_was_python:
+            console = self.extconsole
+        else:
+            console = self.ipyconsole
+        console.visibility_changed(True)
+        console.raise_()
+        console.execute_python_code(lines)
+        if focus_to_editor:
+           self.editor.visibility_changed(True)
+        
+    def open_file(self, fname, external=False):
+        """
+        Open filename with the appropriate application
+        Redirect to the right widget (txt -> editor, spydata -> workspace, ...)
+        or open file outside Spyder (if extension is not supported)
+        """
+        fname = unicode(fname)
+        ext = osp.splitext(fname)[1]
+        if ext in EDIT_EXT:
+            self.editor.load(fname)
+        elif self.variableexplorer is not None and ext in IMPORT_EXT\
+             and ext in ('.spydata', '.mat', '.npy', '.h5'):
+            self.variableexplorer.import_data(fname)
+        elif not external:
+            fname = file_uri(fname)
+            programs.start_file(fname)
+    
+    def open_external_file(self, fname):
+        """
+        Open external files that can be handled either by the Editor or the
+        variable explorer inside Spyder.
+        """
+        if osp.isfile(fname):
+            self.open_file(fname, external=True)
+        elif osp.isfile(osp.join(CWD, fname)):
+            self.open_file(osp.join(CWD, fname), external=True)
+            
+
     def resizeEvent(self, event):
         """Reimplement Qt method"""
         if not self.isMaximized() and not self.fullscreen_flag:
@@ -1026,27 +1096,8 @@ class MainWindow(QMainWindow):
             self.extconsole.open_interpreter_at_startup()
         self.extconsole.setMinimumHeight(0)
         
-    def redirect_internalshell_stdio(self, state):
-        if state:
-            self.console.shell.interpreter.redirect_stds()
-        else:
-            self.console.shell.interpreter.restore_stds()
-            
-    def execute_in_external_console(self, lines, focus_to_editor):
-        """Execute lines in external or IPython console 
-        and eventually set focus to editor"""
-        console = self.extconsole
-        if self.ipyconsole is None\
-           or self.last_console_plugin_focus_was_python:
-            console = self.extconsole
-        else:
-            console = self.ipyconsole
-        console.visibility_changed(True)
-        console.raise_()
-        console.execute_python_code(lines)
-        if focus_to_editor:
-           self.editor.visibility_changed(True)
-    #---- PYTHONPATH management, etc.
+
+#---- PYTHONPATH management, etc.
     def get_spyder_pythonpath(self):
         """Return Spyder PYTHONPATH"""
         return self.path+self.project_path
@@ -1082,32 +1133,7 @@ class MainWindow(QMainWindow):
                 self.emit(SIGNAL('open_external_file(QString)'), fname)
             req.sendall(' ')
 
-    def open_file(self, fname, external=False):
-        """
-        Open filename with the appropriate application
-        Redirect to the right widget (txt -> editor, spydata -> workspace, ...)
-        or open file outside Spyder (if extension is not supported)
-        """
-        fname = unicode(fname)
-        ext = osp.splitext(fname)[1]
-        if ext in EDIT_EXT:
-            self.editor.load(fname)
-        elif self.variableexplorer is not None and ext in IMPORT_EXT\
-             and ext in ('.spydata', '.mat', '.npy', '.h5'):
-            self.variableexplorer.import_data(fname)
-        elif not external:
-            fname = file_uri(fname)
-            programs.start_file(fname)
             
-    def open_external_file(self, fname):
-        """
-        Open external files that can be handled either by the Editor or the
-        variable explorer inside Spyder.
-        """
-        if osp.isfile(fname):
-            self.open_file(fname, external=True)
-        elif osp.isfile(osp.join(CWD, fname)):
-            self.open_file(osp.join(CWD, fname), external=True)
 #==============================================================================
 # Spyder's main window widgets utilities
 #==============================================================================
