@@ -12,6 +12,7 @@
 # pylint: disable=R0201
 
 #from PyQt4 import is_pyqt46
+is_pyqt4 = False
 from PyQt4.QtGui import (QVBoxLayout, QMessageBox, QMenu, QFont,
                                 QAction, QApplication, QWidget, QHBoxLayout,
                                 QLabel, QKeySequence, QShortcut, QMainWindow,
