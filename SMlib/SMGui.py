@@ -415,6 +415,12 @@ class MainWindow(QMainWindow):
         self.edit_menu = self.menuBar().addMenu(_("&Edit"))
         # search_menu
         self.search_menu = self.menuBar().addMenu(_("&Search"))
+        # Run menu
+        self.run_menu = self.menuBar().addMenu(_("&Run"))
+        # Interact menu
+        self.interact_menu = self.menuBar().addMenu(_("&Interpreters"))
+        # Tools menu
+        self.tools_menu = self.menuBar().addMenu(_("&Tools"))
         # View menu
         self.view_menu = self.menuBar().addMenu(_("&View"))
         # Help menu
@@ -423,8 +429,15 @@ class MainWindow(QMainWindow):
         add_actions(self.file_menu, self.file_menu_actions)
         add_actions(self.edit_menu, self.edit_menu_actions)
         add_actions(self.search_menu, self.search_menu_actions)
+        add_actions(self.interact_menu, self.interact_menu_actions)
+        add_actions(self.run_menu, self.run_menu_actions)
         
         self.view_menu.addMenu(self.windows_toolbars_menu)
+        
+        add_actions(self.view_menu, (None, self.maximize_action,
+                                         self.fullscreen_action, None,
+                                         #reset_layout_action, quick_layout_menu,
+                                         None, self.close_dockwidget_action))
         
     def createToolBars(self):
         'initial the tool bar'
@@ -436,11 +449,14 @@ class MainWindow(QMainWindow):
         self.edit_toolbar = self.create_toolbar(_("&Edit"), "edit")
         #search tool bar
         self.search_toolbar = self.create_toolbar(_("Search toolbar"),"search_toolbar")
+        # Run toolbar
+        self.run_toolbar = self.create_toolbar(_("Run toolbar"), "run_toolbar")
         
         add_actions(self.main_toolbar, self.main_toolbar_actions)
         add_actions(self.file_toolbar, self.file_toolbar_actions)
         add_actions(self.edit_toolbar, self.edit_toolbar_actions)
         add_actions(self.search_toolbar, self.search_toolbar_actions)
+        add_actions(self.run_toolbar, self.run_toolbar_actions)
         
     def createStatusBar(self):
         ''
