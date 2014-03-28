@@ -108,7 +108,7 @@ EXCLUDE_PATTERNS = [r'\.pyc$|\.pyo$|\.orig$|\.hg|\.svn|\bbuild\b',
 DEFAULTS = [
             ('main',
              {
-              'window/size': (1260, 740),
+              'window/size': (888, 640),
               'window/position': (10, 10),
               'window/prefs_dialog_size': (745, 411),
               'window/is_maximized': False,
