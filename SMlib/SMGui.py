@@ -44,6 +44,7 @@ from SMlib.plugins.workingdirectory import WorkingDirectory
 from SMlib.plugins.variableexplorer import VariableExplorer
 from SMlib.plugins.inspector import ObjectInspector
 from SMlib.plugins.findinfiles import FindInFiles
+from SMlib.plugins.history import HistoryLog
 
 from PyQt4.QtGui import (QMainWindow, QApplication, QAction,QDockWidget, 
                         QShortcut, QMenu, QMessageBox, QColor)
@@ -253,6 +254,13 @@ class MainWindow(QMainWindow):
         self.findinfiles = FindInFiles(self)
         self.findinfiles.register_plugin()
         
+        
+                    # History log widget
+        #if CONF.get('historylog', 'enable'):
+            #self.set_splash(_("Loading history plugin..."))
+            #self.historylog = HistoryLog(self)
+            #self.historylog.register_plugin()
+                
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
         
@@ -271,15 +279,17 @@ class MainWindow(QMainWindow):
             self.ipyconsole = IPythonConsole(self)
             self.ipyconsole.register_plugin()
         
-        if self.light :
-        # Status bar widgets
-            self.mem_status = MemoryStatus(self, status)
-            self.cpu_status = CPUStatus(self, status)
-            self.apply_statusbar_settings()
-        
         self.createMenus()
         self.createToolBars()
         self.createStatusBar()
+        
+
+        # Status bar widgets
+        self.mem_status = MemoryStatus(self, self.status)
+        self.cpu_status = CPUStatus(self, self.status)
+        self.apply_statusbar_settings()
+        
+        
         # Apply all defined shortcuts (plugins + 3rd-party plugins)
         self.apply_shortcuts()
         self.remove_deprecated_shortcuts()
@@ -460,9 +470,9 @@ class MainWindow(QMainWindow):
         
     def createStatusBar(self):
         ''
-        status = self.statusBar()
-        status.setObjectName("StatusBar")
-        status.showMessage("Ready", 5000)
+        self.status = self.statusBar()
+        self.status.setObjectName("StatusBar")
+        self.status.showMessage("Ready", 5000)
     
     #---- Window setup
     def create_toolbar(self, title, object_name, iconsize=24):
@@ -782,9 +792,11 @@ class MainWindow(QMainWindow):
                 if first is not None and second is not None:
                     self.tabify_plugins(first, second)
                     
+            '''
             for plugin in [self.findinfiles, self.onlinehelp, self.console,]+self.thirdparty_plugins:
                 if plugin is not None:
                     plugin.dockwidget.close()
+            '''
             for plugin in (self.inspector, self.extconsole):
                 if plugin is not None:
                     plugin.dockwidget.raise_()
