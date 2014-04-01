@@ -14,7 +14,8 @@
 																			
 2014.01.16 In config.py, 'matplotlib/patch' is True in config.				Change 'matplotlib/patch' from True to False
 
-2014.03.06 In pyqt, there is Signal. 										But in PyQt4.QtCore, we should use pyqtSignal
+2014.03.06 In pyqt, there is Signal, Slot, Property. 				But in PyQt4.QtCore, we should use pyqtSignal,
+																			pyqtSlot, pyqtProperty
 
 2014.03.11 =============================================================================================================================== 
 note for plugin thread message communication 
