@@ -91,11 +91,17 @@ def get_filter(filetypes, ext):
     else:
         return ''
     
+# Extensions that should be visible in Spyder's file/project explorers
+SHOW_EXT = ['.png', '.ico', '.svg']
+
 EDIT_FILTERS = _get_filters(EDIT_FILETYPES)
 EDIT_EXT = _get_extensions(EDIT_FILETYPES)+['']
 
 # Extensions supported by Spyder's Variable explorer
 IMPORT_EXT = iofuncs.iofunctions.load_extensions.values()
+
+# Extensions supported by Spyder (Editor or Variable explorer)
+VALID_EXT = EDIT_EXT+IMPORT_EXT
 
 # Find in files include/exclude patterns
 INCLUDE_PATTERNS = [r'|'.join(['\\'+_ext+r'$' for _ext in EDIT_EXT if _ext])+\
@@ -105,6 +111,10 @@ INCLUDE_PATTERNS = [r'|'.join(['\\'+_ext+r'$' for _ext in EDIT_EXT if _ext])+\
 EXCLUDE_PATTERNS = [r'\.pyc$|\.pyo$|\.orig$|\.hg|\.svn|\bbuild\b',
                     r'\.pyc$|\.pyo$|\.orig$|\.hg|\.svn']
 
+# Name filters for file/project explorers (excluding files without extension)
+NAME_FILTERS = ['*' + _ext for _ext in VALID_EXT + SHOW_EXT if _ext]+\
+               ['README', 'INSTALL', 'LICENSE', 'CHANGELOG']
+               
 DEFAULTS = [
             ('main',
              {
@@ -328,6 +338,13 @@ DEFAULTS = [
               'minmax': False,
               'collvalue': False,
               'remote_editing': False,
+              }),
+            ('project_explorer',
+             {
+              'shortcut': "Ctrl+Shift+P",
+              'enable': True,
+              'name_filters': NAME_FILTERS,
+              'show_all': False,
               }),
             ('historylog',
              {
