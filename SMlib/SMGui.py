@@ -10,7 +10,7 @@ import errno
 # Test if IPython v0.13+ is installed to eventually switch to PyQt API #2
 from SMlib.utils.programs import is_module_installed
 from SMlib.config import CONF, EDIT_EXT, OPEN_FILES_PORT, IMPORT_EXT
-from SMlib.configs.baseconfig import _
+from SMlib.configs.baseconfig import (_,STDOUT, STDERR)
 from SMlib.configs.ipythonconfig import IPYTHON_QT_MODULE, SUPPORTED_IPYTHON
 from SMlib import dependencies
 from SMlib.utils import module_completion
@@ -45,6 +45,12 @@ from SMlib.plugins.variableexplorer import VariableExplorer
 from SMlib.plugins.inspector import ObjectInspector
 from SMlib.plugins.findinfiles import FindInFiles
 from SMlib.plugins.history import HistoryLog
+from SMlib.plugins.configdialog import (ConfigDialog, MainConfigPage,
+                                            ColorSchemeConfigPage)
+from SMlib.plugins.shortcuts import ShortcutsConfigPage
+from SMlib.plugins.runconfig import RunConfigPage
+
+from SMlib.widgets.pathmanager import PathManager
 
 from PyQt4.QtGui import (QMainWindow, QApplication, QAction,QDockWidget, 
                         QShortcut, QMenu, QMessageBox, QColor)
@@ -66,6 +72,7 @@ from SMlib.utils.qthelpers import (create_action, add_actions, get_icon,
                                        keybinding, qapplication,
                                        create_python_script_action, file_uri, from_qvariant)
 from SMlib.utils import encoding, programs
+from SMlib.otherplugins import get_spyderplugins_mods
 
 # Get the cwd before initializing WorkingDirectory, which sets it to the one
 # used in the last session
@@ -184,6 +191,10 @@ class MainWindow(QMainWindow):
         self.already_closed = False
         self.is_starting_up = True
         
+        # Preferences
+        self.general_prefs = [MainConfigPage, ShortcutsConfigPage,
+                              ColorSchemeConfigPage, RunConfigPage]
+        
         self.prefs_index = None
         self.prefs_dialog_size = None
         
@@ -288,6 +299,18 @@ class MainWindow(QMainWindow):
         self.mem_status = MemoryStatus(self, self.status)
         self.cpu_status = CPUStatus(self, self.status)
         self.apply_statusbar_settings()
+        
+        '''
+        # Third-party plugins
+        for mod in get_spyderplugins_mods(prefix='p_', extension='.py'):
+            try:
+                print "mod", mod
+                plugin = mod.PLUGIN_CLASS(self)
+                self.thirdparty_plugins.append(plugin)
+                plugin.register_plugin()
+            except AttributeError, error:
+                print >>STDERR, "%s: %s" % (mod, str(error))
+'''
         
         
         # Apply all defined shortcuts (plugins + 3rd-party plugins)
@@ -416,6 +439,20 @@ class MainWindow(QMainWindow):
         self.register_shortcut(quit_action, "_", "Quit", "Ctrl+Q")
         self.file_menu_actions += [quit_action]
         
+        # Tools + External Tools
+        prefs_action = create_action(self, _("Pre&ferences"),icon='configure.png',
+                                     triggered=self.edit_preferences)
+        self.register_shortcut(prefs_action, "_", "Preferences","Ctrl+Alt+Shift+P")
+        add_shortcut_to_tooltip(prefs_action, context="_",name="Preferences")
+        
+        SMlib_path_action = create_action(self,
+                                    _("PYTHONPATH manager"),
+                                    None, 'pythonpath_mgr.png',
+                                    triggered=self.path_manager_callback,
+                                    tip=_("Python Path Manager"),
+                                    menurole=QAction.ApplicationSpecificRole)
+        
+        self.tools_menu_actions = [prefs_action, SMlib_path_action]
         
     def createMenus(self):
         'initial the menus for system'
@@ -441,6 +478,7 @@ class MainWindow(QMainWindow):
         add_actions(self.search_menu, self.search_menu_actions)
         add_actions(self.interact_menu, self.interact_menu_actions)
         add_actions(self.run_menu, self.run_menu_actions)
+        add_actions(self.tools_menu, self.tools_menu_actions)
         
         self.view_menu.addMenu(self.windows_toolbars_menu)
         
@@ -683,8 +721,40 @@ class MainWindow(QMainWindow):
             action.setEnabled(True)
         self.replace_action.setEnabled(readwrite_editor)
         self.replace_action.setEnabled(readwrite_editor)
-        
 
+    def edit_preferences(self):
+        """Edit Spyder preferences"""
+        dlg = ConfigDialog(self)
+        self.connect(dlg, SIGNAL("size_change(QSize)"),
+                     lambda s: self.set_prefs_size(s))
+        if self.prefs_dialog_size is not None:
+            dlg.resize(self.prefs_dialog_size)
+        for PrefPageClass in self.general_prefs:
+            widget = PrefPageClass(dlg, main=self)
+            widget.initialize()
+            dlg.add_page(widget)
+        for plugin in [self.workingdirectory, self.editor,
+                       self.projectexplorer, self.extconsole, self.ipyconsole,
+                       self.historylog, self.inspector, self.variableexplorer,
+                       self.onlinehelp, self.explorer, self.findinfiles
+                       ]:
+#                        disable the thirdpart plugins
+#                       ]+self.thirdparty_plugins:
+            if plugin is not None:
+                widget = plugin.create_configwidget(dlg)
+                if widget is not None:
+                    dlg.add_page(widget)
+        if self.prefs_index is not None:
+            dlg.set_current_index(self.prefs_index)
+        dlg.show()
+        dlg.check_all_settings()
+        self.connect(dlg.pages_widget, SIGNAL("currentChanged(int)"),
+                     self.__preference_page_changed)
+        dlg.exec_()
+        
+    def __preference_page_changed(self, index):
+        """Preference page index has changed"""
+        self.prefs_index = index
         
     def toggle_fullscreen(self):
         if self.isFullScreen():
@@ -919,6 +989,10 @@ class MainWindow(QMainWindow):
                 plugin = plugin.parent()
             return plugin         
     
+    def set_prefs_size(self, size):
+        """Save preferences dialog size"""
+        self.prefs_dialog_size = size
+    
     def find(self):
         """Global find callback"""
         plugin = self.get_current_editor_plugin()
@@ -1143,6 +1217,19 @@ class MainWindow(QMainWindow):
         sys_path = sys.path
         while sys_path[1] in self.get_spyder_pythonpath():
             sys_path.pop(1)
+
+    def path_manager_callback(self):
+        """Spyder path manager"""
+        self.remove_path_from_sys_path()
+        project_pathlist = self.projectexplorer.get_pythonpath()
+        dialog = PathManager(self, self.path, project_pathlist, sync=True)
+        self.connect(dialog, SIGNAL('redirect_stdio(bool)'),
+                     self.redirect_internalshell_stdio)
+        dialog.exec_()
+        self.add_path_to_sys_path()
+        encoding.writelines(self.path, self.spyder_path) # Saving path
+        self.emit(SIGNAL("pythonpath_changed()"))
+        
     def start_open_files_server(self):
         self.open_files_server.setsockopt(socket.SOL_SOCKET,
                                           socket.SO_REUSEADDR, 1)
