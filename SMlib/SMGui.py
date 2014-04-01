@@ -49,6 +49,7 @@ from SMlib.plugins.configdialog import (ConfigDialog, MainConfigPage,
                                             ColorSchemeConfigPage)
 from SMlib.plugins.shortcuts import ShortcutsConfigPage
 from SMlib.plugins.runconfig import RunConfigPage
+from SMlib.plugins.projectexplorer import ProjectExplorer
 
 from SMlib.widgets.pathmanager import PathManager
 
@@ -72,7 +73,7 @@ from SMlib.utils.qthelpers import (create_action, add_actions, get_icon,
                                        keybinding, qapplication,
                                        create_python_script_action, file_uri, from_qvariant)
 from SMlib.utils import encoding, programs
-from SMlib.otherplugins import get_spyderplugins_mods
+#from SMlib.otherplugins import get_spyderplugins_mods
 
 # Get the cwd before initializing WorkingDirectory, which sets it to the one
 # used in the last session
@@ -272,6 +273,12 @@ class MainWindow(QMainWindow):
             #self.historylog = HistoryLog(self)
             #self.historylog.register_plugin()
                 
+        
+        if CONF.get('project_explorer', 'enable'):
+                #self.set_splash(_("Loading project explorer..."))
+                self.projectexplorer = ProjectExplorer(self)
+                self.projectexplorer.register_plugin()
+        
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
         
@@ -1201,7 +1208,13 @@ class MainWindow(QMainWindow):
         else:
             self.extconsole.open_interpreter_at_startup()
         self.extconsole.setMinimumHeight(0)
-        
+    
+    def pythonpath_changed(self):
+        """Project Explorer PYTHONPATH contribution has changed"""
+        self.remove_path_from_sys_path()
+        self.project_path = self.projectexplorer.get_pythonpath()
+        self.add_path_to_sys_path()
+        self.emit(SIGNAL("pythonpath_changed()"))
 
 #---- PYTHONPATH management, etc.
     def get_spyder_pythonpath(self):
@@ -1227,7 +1240,7 @@ class MainWindow(QMainWindow):
                      self.redirect_internalshell_stdio)
         dialog.exec_()
         self.add_path_to_sys_path()
-        encoding.writelines(self.path, self.spyder_path) # Saving path
+        encoding.writelines(self.path, self.SM_path) # Saving path
         self.emit(SIGNAL("pythonpath_changed()"))
         
     def start_open_files_server(self):
