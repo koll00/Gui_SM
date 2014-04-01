@@ -14,7 +14,7 @@ from PyQt4.QtGui import (QVBoxLayout, QLabel, QHBoxLayout, QWidget,
                                 QFileIconProvider, QMessageBox, QInputDialog,
                                 QLineEdit, QPushButton, QHeaderView,
                                 QAbstractItemView)
-from PyQt4.QtCore import Qt, SIGNAL, QFileInfo, Slot, Signal
+from PyQt4.QtCore import Qt, SIGNAL, QFileInfo, pyqtSlot, pyqtSignal
 #from PyQt4.compat import getexistingdirectory
 
 import os
@@ -480,8 +480,8 @@ class IconProvider(QFileIconProvider):
         super(IconProvider, self).__init__()
         self.treeview = treeview
         
-    @Slot(int)
-    @Slot(QFileInfo)
+    @pyqtSlot(int)
+    @pyqtSlot(QFileInfo)
     def icon(self, icontype_or_qfileinfo):
         """Reimplement Qt method"""
         if isinstance(icontype_or_qfileinfo, QFileIconProvider.IconType):
@@ -1256,8 +1256,8 @@ class ProjectExplorerWidget(QWidget):
         SIGNAL("renamed(QString,QString)")
         SIGNAL("removed(QString)")
     """
-    sig_option_changed = Signal(str, object)
-    sig_open_file = Signal(str)
+    sig_option_changed = pyqtSignal(str, object)
+    sig_open_file = pyqtSignal(str)
     
     def __init__(self, parent, name_filters=['*.py', '*.pyw'],
                  valid_types=['.py', '.pyw'], show_all=False,
