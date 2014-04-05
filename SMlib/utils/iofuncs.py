@@ -2,7 +2,7 @@
 #
 # Copyright © 2009-2010 Pierre Raybaut
 # Licensed under the terms of the MIT License
-# (see spyderlib/__init__.py for details)
+# (see SMlib/__init__.py for details)
 
 """
 Input/Output Utilities
@@ -75,7 +75,7 @@ except ImportError:
 
 
 try:
-    from spyderlib.pil_patch import Image
+    from SMlib.pil_patch import Image
     if sys.byteorder == 'little':
         _ENDIAN = '<'
     else:
@@ -206,7 +206,7 @@ def load_dictionary(filename):
     return data, error_message
 
 
-from spyderlib.baseconfig import get_conf_path, STDERR
+from SMlib.configs.baseconfig import get_conf_path, STDERR
 
 SAVED_CONFIG_FILES = ('.inspector', '.onlinehelp', '.path', '.pylint.results',
                       '.spyder.ini', '.temp.py', '.temp.spydata', 'template.py',
@@ -295,7 +295,7 @@ def load_session(filename):
     return error_message
 
 
-from spyderlib.baseconfig import _
+from SMlib.configs.baseconfig import _
 
 class IOFunctions(object):
     def __init__(self):
@@ -307,7 +307,7 @@ class IOFunctions(object):
         self.save_funcs = None
         
     def setup(self):
-        iofuncs = self.get_internal_funcs()+self.get_3rd_party_funcs()
+        iofuncs = self.get_internal_funcs()#+self.get_3rd_party_funcs()
         load_extensions = {}
         save_extensions = {}
         load_funcs = {}
@@ -348,10 +348,10 @@ class IOFunctions(object):
                 ('.gif', _("GIF images"), load_image, None),
                 ('.tif', _("TIFF images"), load_image, None),
                 ]
-        
+    ''' 
     def get_3rd_party_funcs(self):
         other_funcs = []
-        from spyderlib.otherplugins import get_spyderplugins_mods
+        from SMlib.otherplugins import get_spyderplugins_mods
         for mod in get_spyderplugins_mods(prefix='io_', extension='.py'):
             try:
                 other_funcs.append((mod.FORMAT_EXT, mod.FORMAT_NAME,
@@ -359,7 +359,7 @@ class IOFunctions(object):
             except AttributeError, error:
                 print >>STDERR, "%s: %s" % (mod, str(error))
         return other_funcs
-        
+    '''
     def save(self, data, filename):
         ext = osp.splitext(filename)[1].lower()
         if ext in self.save_funcs:
