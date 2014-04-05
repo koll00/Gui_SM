@@ -372,6 +372,16 @@ DEFAULTS = [
               'completion/font/bold': False,
               'completion/size': (300, 180),
               }),
+            ('explorer',
+             {
+              'enable': True,
+              'wrap': True,
+              'name_filters': NAME_FILTERS,
+              'show_hidden': True,
+              'show_all': False,
+              'show_toolbar': True,
+              'show_icontext': True,
+              }),
             ('find_in_files',
              {
               'enable': True,

@@ -50,6 +50,7 @@ from SMlib.plugins.configdialog import (ConfigDialog, MainConfigPage,
 from SMlib.plugins.shortcuts import ShortcutsConfigPage
 from SMlib.plugins.runconfig import RunConfigPage
 from SMlib.plugins.projectexplorer import ProjectExplorer
+from SMlib.plugins.explorer import Explorer
 
 from SMlib.widgets.pathmanager import PathManager
 
@@ -262,12 +263,17 @@ class MainWindow(QMainWindow):
             
         
         # Find in files
-        #if CONF.get('find_in_files', 'enable'):
-        self.findinfiles = FindInFiles(self)
-        self.findinfiles.register_plugin()
+        if CONF.get('find_in_files', 'enable'):
+            self.findinfiles = FindInFiles(self)
+            self.findinfiles.register_plugin()
         
+        # Explorer
+        if CONF.get('explorer', 'enable'):
+            #self.set_splash(_("Loading file explorer..."))
+            self.explorer = Explorer(self)
+            self.explorer.register_plugin()
         
-                    # History log widget
+        # History log widget
         #if CONF.get('historylog', 'enable'):
             #self.set_splash(_("Loading history plugin..."))
             #self.historylog = HistoryLog(self)
@@ -296,6 +302,12 @@ class MainWindow(QMainWindow):
         if is_module_installed(IPYTHON_QT_MODULE, SUPPORTED_IPYTHON):
             self.ipyconsole = IPythonConsole(self)
             self.ipyconsole.register_plugin()
+        
+        
+        nsb = self.variableexplorer.add_shellwidget(self.console.shell)
+        self.connect(self.console.shell, SIGNAL('refresh()'),
+                     nsb.refresh_table)
+        nsb.auto_refresh_button.setEnabled(False)
         
         self.createMenus()
         self.createToolBars()
@@ -869,11 +881,12 @@ class MainWindow(QMainWindow):
                 if first is not None and second is not None:
                     self.tabify_plugins(first, second)
                     
-            '''
-            for plugin in [self.findinfiles, self.onlinehelp, self.console,]+self.thirdparty_plugins:
+            
+            for plugin in [self.findinfiles, self.onlinehelp, self.console,]:
+                #+self.thirdparty_plugins:
                 if plugin is not None:
                     plugin.dockwidget.close()
-            '''
+            
             for plugin in (self.inspector, self.extconsole):
                 if plugin is not None:
                     plugin.dockwidget.raise_()
