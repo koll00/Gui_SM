@@ -272,14 +272,12 @@ class MainWindow(QMainWindow):
             #self.set_splash(_("Loading file explorer..."))
             self.explorer = Explorer(self)
             self.explorer.register_plugin()
-        
-        # History log widget
-        #if CONF.get('historylog', 'enable'):
+                    # History log widget
+        if CONF.get('historylog', 'enable'):
             #self.set_splash(_("Loading history plugin..."))
-            #self.historylog = HistoryLog(self)
-            #self.historylog.register_plugin()
+            self.historylog = HistoryLog(self)
+            self.historylog.register_plugin()
                 
-        
         if CONF.get('project_explorer', 'enable'):
                 #self.set_splash(_("Loading project explorer..."))
                 self.projectexplorer = ProjectExplorer(self)
