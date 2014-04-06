@@ -149,7 +149,7 @@ class SMPluginMixin(object):
         self.mainwindow = mainwindow = QMainWindow()
         mainwindow.setAttribute(Qt.WA_DeleteOnClose)
         icon = self.get_widget_icon()
-        if is_text_string(icon):
+        if isinstance(icon, basestring):
             icon = get_icon(icon)
         mainwindow.setWindowIcon(icon)
         mainwindow.setWindowTitle(self.get_plugin_title())

@@ -82,13 +82,13 @@ class HistoryLog(SMPluginWidget):
         SMPluginWidget.__init__(self, parent)
 
         # Initialize plugin
-        #self.initialize_plugin()
+        self.initialize_plugin()
         
-        #self.set_default_color_scheme()
+        self.set_default_color_scheme()
         
         layout = QVBoxLayout()
         self.tabwidget = Tabs(self, self.menu_actions)
-        '''
+        
         self.connect(self.tabwidget, SIGNAL('currentChanged(int)'),
                      self.refresh_plugin)
         self.connect(self.tabwidget, SIGNAL('move_data(int,int)'),
@@ -103,15 +103,15 @@ class HistoryLog(SMPluginWidget):
         add_actions(menu, self.menu_actions)
         options_button.setMenu(menu)
         self.tabwidget.setCornerWidget(options_button)
-        '''
+        
         # Find/replace widget
         self.find_widget = FindReplace(self)
         self.find_widget.hide()
         self.register_widget_shortcuts("Editor", self.find_widget)
         
-        #layout.addWidget(self.find_widget)
+        layout.addWidget(self.find_widget)
         
-        #self.setLayout(layout)
+        self.setLayout(layout)
         
     #------ SMPluginWidget API ---------------------------------------------    
     def get_plugin_title(self):

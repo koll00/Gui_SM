@@ -256,10 +256,10 @@ class MainWindow(QMainWindow):
         
         
                     # History log widget
-        #if CONF.get('historylog', 'enable'):
+        if CONF.get('historylog', 'enable'):
             #self.set_splash(_("Loading history plugin..."))
-            #self.historylog = HistoryLog(self)
-            #self.historylog.register_plugin()
+            self.historylog = HistoryLog(self)
+            self.historylog.register_plugin()
                 
         self.extconsole = ExternalConsole(self, light_mode=self.light)
         self.extconsole.register_plugin()
