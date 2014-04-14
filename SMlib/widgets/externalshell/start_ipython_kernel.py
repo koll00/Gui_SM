@@ -2,10 +2,10 @@
 #
 # Copyright © 2009-2012 Pierre Raybaut
 # Licensed under the terms of the MIT License
-# (see spyderlib/__init__.py for details)
+# (see SMlib/__init__.py for details)
 
 """Startup file used by ExternalPythonShell exclusively for IPython kernels
-(see spyderlib/widgets/externalshell/pythonshell.py)"""
+(see SMlib/widgets/externalshell/pythonshell.py)"""
 
 import sys
 import os.path as osp
@@ -13,7 +13,7 @@ import os.path as osp
 
 def sympy_config():
     """Sympy configuration"""
-    from spyderlib.utils.programs import is_module_installed    
+    from SMlib.utils.programs import is_module_installed    
     lines_new = """
 from sympy.interactive import init_session
 init_session()
@@ -42,8 +42,8 @@ def kernel_config():
     """Create a config object with IPython kernel options"""
     from IPython.config.loader import Config, load_pyconfig_files
     from IPython.core.application import get_ipython_dir
-    from spyderlib.config import CONF
-    from spyderlib.utils.programs import is_module_installed
+    from SMlib.config import CONF
+    from SMlib.utils.programs import is_module_installed
     
     # ---- IPython config ----
     try:
@@ -58,7 +58,7 @@ def kernel_config():
     spy_cfg = Config()
     
     # Until we implement Issue 1052:
-    # http://code.google.com/p/spyderlib/issues/detail?id=1052
+    # http://code.google.com/p/SMlib/issues/detail?id=1052
     spy_cfg.InteractiveShell.xmode = 'Plain'
     
     # Pylab configuration

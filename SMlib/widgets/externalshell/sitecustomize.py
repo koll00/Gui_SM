@@ -134,7 +134,7 @@ if mpl_backend:
 
 if os.environ.get("MATPLOTLIB_PATCH", "").lower() == "true":
     try:
-        from spyderlib import mpl_patch
+        from SMlib import mpl_patch
         mpl_patch.apply()
     except ImportError:
         pass
@@ -168,7 +168,7 @@ except ImportError:
 if os.environ.get('SPYDER_SHELL_ID') is None:
     monitor = None
 else:
-    from spyderlib.widgets.externalshell.monitor import Monitor
+    from SMlib.widgets.externalshell.monitor import Monitor
     monitor = Monitor("127.0.0.1",
                       int(os.environ['SPYDER_I_PORT']),
                       int(os.environ['SPYDER_N_PORT']),
@@ -320,7 +320,7 @@ class SpyderPdb(pdb.Pdb):
         bdb.Breakpoint.bplist = {}
         bdb.Breakpoint.bpbynumber = [None]
         #------
-        from spyderlib.config import CONF
+        from SMlib.config import CONF
         CONF.load_from_ini()
         if CONF.get('run', 'breakpoints/enabled', True):
             breakpoints = CONF.get('run', 'breakpoints', {})
@@ -599,7 +599,7 @@ def evalsc(command):
             else:
                 evalsc('!ls')
         elif command == 'scientific':
-            from spyderlib import baseconfig
+            from SMlib.configs import baseconfig
             execfile(baseconfig.SCIENTIFIC_STARTUP, namespace)
         else:
             raise NotImplementedError("Unsupported command: '%s'" % command)

@@ -222,7 +222,7 @@ class ExternalPythonShell(ExternalShellBase):
             # Running our custom startup script for IPython kernels:
             # (see spyderlib/widgets/externalshell/start_ipython_kernel.py)
             self.fname = get_module_source_path(
-                'spyderlib.widgets.externalshell', 'start_ipython_kernel.py')
+                'SMlib.widgets.externalshell', 'start_ipython_kernel.py')
         
         self.shell.set_externalshell(self)
 

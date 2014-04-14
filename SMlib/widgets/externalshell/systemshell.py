@@ -2,24 +2,24 @@
 #
 # Copyright © 2009-2010 Pierre Raybaut
 # Licensed under the terms of the MIT License
-# (see spyderlib/__init__.py for details)
+# (see SMlib/__init__.py for details)
 
 """External System Shell widget: execute terminal in a separate process"""
 
 import os
 
-from spyderlib.qt.QtGui import QMessageBox
-from spyderlib.qt.QtCore import QProcess, SIGNAL, QTextCodec
+from PyQt4.QtGui import QMessageBox
+from PyQt4.QtCore import QProcess, SIGNAL, QTextCodec
 locale_codec = QTextCodec.codecForLocale()
 
 # Local imports
-from spyderlib.utils import encoding
-from spyderlib.utils.programs import shell_split
-from spyderlib.baseconfig import _
-from spyderlib.utils.qthelpers import get_icon
-from spyderlib.widgets.externalshell.baseshell import (ExternalShellBase,
+from SMlib.utils import encoding
+from SMlib.utils.programs import shell_split
+from SMlib.configs.baseconfig import _
+from SMlib.utils.qthelpers import get_icon
+from SMlib.widgets.externalshell.baseshell import (ExternalShellBase,
                                                    add_pathlist_to_PYTHONPATH)
-from spyderlib.widgets.shell import TerminalWidget
+from SMlib.widgets.shell import TerminalWidget
 
 
 class ExternalSystemShell(ExternalShellBase):

@@ -60,7 +60,7 @@ else:
 def get_conf_path(filename=None):
     """Return absolute path for configuration file with specified filename"""
     if TEST is None:
-        from spyderlib import userconfig
+        from SMlib.configs import userconfig
         conf_dir = osp.join(userconfig.get_home_dir(), SUBFOLDER)
     else:
          import tempfile
@@ -201,7 +201,7 @@ def get_supported_types():
     dict(picklable=picklable_types, editable=editables_types)
          
     See:
-    get_remote_data function in spyderlib/widgets/externalshell/monitor.py
+    get_remote_data function in SMlib/widgets/externalshell/monitor.py
     get_internal_shell_filter method in namespacebrowser.py
     
     Note:
@@ -216,7 +216,7 @@ def get_supported_types():
         pass
     picklable_types = editable_types[:]
     try:
-        from spyderlib.pil_patch import Image
+        from SMlib.pil_patch import Image
         editable_types.append(Image.Image)
     except ImportError:
         pass

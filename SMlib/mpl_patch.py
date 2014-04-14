@@ -19,13 +19,13 @@ def apply():
 
     # Warning: do not move these import statements outside this function,
     # otherwise, PyQt would be imported as soon as this module would be.
-    from spyderlib.qt import is_pyqt46
-    from spyderlib.qt.QtGui import QIcon, QCursor, QInputDialog, QMainWindow
-    from spyderlib.qt.QtCore import Qt, SIGNAL, QObject
+    from SMlib.qt import is_pyqt46
+    from PyQt4.QtGui import QIcon, QCursor, QInputDialog, QMainWindow
+    from PyQt4.QtCore import Qt, SIGNAL, QObject
     
     # Avoid using matplotlib's formlayout version which is not compatible 
     # with PyQt4 API #2 and PySide (at least up to Matplotlib v1.0.1)
-    from spyderlib.widgets import formlayout
+    from SMlib.widgets import formlayout
     sys.modules['matplotlib.backends.qt4_editor.formlayout'] = formlayout
     import matplotlib.backends.qt4_editor
     matplotlib.backends.qt4_editor.formlayout = formlayout
@@ -104,12 +104,12 @@ def apply():
         edit_parameters = None
         # -> Figure options button does not exist yet
         
-    from spyderlib.widgets.figureoptions import figure_edit
+    from SMlib.widgets.figureoptions import figure_edit
     class NavigationToolbar2QT(backend_qt4.NavigationToolbar2QT):
         def _init_toolbar(self):
             super(NavigationToolbar2QT, self)._init_toolbar()
             if edit_parameters is None:
-                from spyderlib.utils.qthelpers import get_icon
+                from SMlib.utils.qthelpers import get_icon
                 a = self.addAction(get_icon("options.svg"),
                                    'Customize', self.edit_parameters)
                 a.setToolTip('Edit curves line and axes parameters')
