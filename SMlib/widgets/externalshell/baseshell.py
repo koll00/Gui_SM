@@ -2,7 +2,7 @@
 #
 # Copyright © 2010 Pierre Raybaut
 # Licensed under the terms of the MIT License
-# (see spyderlib/__init__.py for details)
+# (see SMlib/__init__.py for details)
 
 # pylint: disable=C0103
 # pylint: disable=R0903
@@ -14,17 +14,17 @@ import os
 import os.path as osp
 from time import time, strftime, gmtime
 
-from spyderlib.qt.QtGui import (QApplication, QWidget, QVBoxLayout,
+from PyQt4.QtGui import (QApplication, QWidget, QVBoxLayout,
                                 QHBoxLayout, QMenu, QLabel, QInputDialog,
                                 QLineEdit, QToolButton)
-from spyderlib.qt.QtCore import (QProcess, SIGNAL, QByteArray, QTimer, Qt,
+from PyQt4.QtCore import (QProcess, SIGNAL, QByteArray, QTimer, Qt,
                                  QTextCodec)
 locale_codec = QTextCodec.codecForLocale()
 
 # Local imports
-from spyderlib.utils.qthelpers import (get_icon, create_toolbutton,
+from SMlib.utils.qthelpers import (get_icon, create_toolbutton,
                                        create_action, add_actions)
-from spyderlib.baseconfig import get_conf_path, _
+from SMlib.configs.baseconfig import get_conf_path, _
 
 
 def add_pathlist_to_PYTHONPATH(env, pathlist):
@@ -68,7 +68,6 @@ class ExternalShellBase(QWidget):
             wdir = osp.dirname(osp.abspath(fname))
         self.wdir = wdir if osp.isdir(wdir) else None
         self.arguments = ""
-        
         self.shell = self.SHELL_CLASS(parent, get_conf_path(history_filename))
         self.shell.set_light_background(light_background)
         self.connect(self.shell, SIGNAL("execute(QString)"),
@@ -290,28 +289,28 @@ class ExternalShellBase(QWidget):
 
 
 def test():
-    from spyderlib.utils.qthelpers import qapplication
+    from SMlib.utils.qthelpers import qapplication
     app = qapplication()
-    from spyderlib.widgets.externalshell.pythonshell import ExternalPythonShell
-    from spyderlib.widgets.externalshell.systemshell import ExternalSystemShell
-    import spyderlib
-    from spyderlib.plugins.variableexplorer import VariableExplorer
+    from SMlib.widgets.externalshell.pythonshell import ExternalPythonShell
+    from SMlib.widgets.externalshell.systemshell import ExternalSystemShell
+    import SMlib
+    from SMlib.plugins.variableexplorer import VariableExplorer
     settings = VariableExplorer.get_settings()
-    shell = ExternalPythonShell(wdir=osp.dirname(spyderlib.__file__),
+    shell = ExternalPythonShell(wdir=osp.dirname(SMlib.__file__),
                                 ipykernel=True, stand_alone=settings,
                                 arguments="-q4thread -pylab -colors LightBG",
                                 mpl_patch_enabled=True, light_background=False)
-#    shell = ExternalPythonShell(wdir=osp.dirname(spyderlib.__file__),
+#    shell = ExternalPythonShell(wdir=osp.dirname(SMlib.__file__),
 #                                interact=True, umd_enabled=True,
 #                                stand_alone=settings,
 #                                umd_namelist=['guidata', 'guiqwt'],
 #                                umd_verbose=True, mpl_patch_enabled=False,
 #                                light_background=False)
-#    shell = ExternalSystemShell(wdir=osp.dirname(spyderlib.__file__),
+#    shell = ExternalSystemShell(wdir=osp.dirname(SMlib.__file__),
 #                                light_background=False)
     shell.shell.toggle_wrap_mode(True)
     shell.start_shell(False)
-    from spyderlib.qt.QtGui import QFont
+    from PyQt4.QtGui import QFont
     font = QFont("Lucida console")
     font.setPointSize(10)
     shell.shell.set_font(font)
