@@ -118,6 +118,9 @@ def get_module_source_path(modname, basename=None):
         srcpath = osp.abspath(osp.join(srcpath, basename))
     return srcpath
 
+SCIENTIFIC_STARTUP = get_module_source_path('SMlib',
+                                            'scientific_startup.py')
+
 # Variable explorer display / check all elements data types for sequences:
 # (when saving the variable explorer contents, check_all is True,
 #  see widgets/externalshell/namespacebrowser.py:NamespaceBrowser.save_data)

@@ -26,7 +26,7 @@ import re
 import sys
 
 # Local imports
-from SMlib.configs.baseconfig import _#, SCIENTIFIC_STARTUP
+from SMlib.configs.baseconfig import _, SCIENTIFIC_STARTUP
 from SMlib.configs.ipythonconfig import SUPPORTED_IPYTHON
 from SMlib.config import CONF
 from SMlib.utils import programs
@@ -500,8 +500,8 @@ class ExternalConsole(SMPluginWidget):
             executable = get_python_executable()
 
         # Python startup file selection
-#        if not osp.isfile(self.get_option('pythonstartup', '')):
-#            self.set_option('pythonstartup', SCIENTIFIC_STARTUP)
+        if not osp.isfile(self.get_option('pythonstartup', '')):
+            self.set_option('pythonstartup', SCIENTIFIC_STARTUP)
         # default/custom settings are mutually exclusive:
         self.set_option('pythonstartup/custom',
                         not self.get_option('pythonstartup/default', False))
