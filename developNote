@@ -31,4 +31,5 @@ note for adding new data in variableexplorer plugin.
 data kinds. And is_supported() function in dicteditorutils.py decide the data which is supported.I think we may rebuild this function.This 
 note is left for later!!!!!!
 
+	For <type 'instance'>, we can isinstance(obj, types.InstanceType)
 ==========================================================================================================================================
