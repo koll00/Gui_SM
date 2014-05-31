@@ -78,7 +78,8 @@ def make_remote_view(data, settings, more_excluded_names=None):
         remote[key] = {'type':  get_human_readable_type(value),
                        'size':  get_size(value),
                        'color': get_color_name(value),
-                       'view':  view}
+                       'view':  view,
+                       'value': value}
     return remote
     
 

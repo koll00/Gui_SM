@@ -35,6 +35,9 @@ from SMlib.utils.iofuncs import iofunctions
 from SMlib.widgets.importwizard import ImportWizard
 from SMlib.configs.baseconfig import _, get_supported_types
 
+# added by shisj
+from SMlib.widgets.treeeditor import RemoteDictEditorTreeView
+
 SUPPORTED_TYPES = get_supported_types()
 
 
@@ -118,7 +121,8 @@ class NamespaceBrowser(QWidget):
                                               inplace=inplace, minmax=minmax,
                                               collvalue=collvalue)
         else:
-            self.editor = RemoteDictEditorTableView(self, None,
+            #self.editor = RemoteDictEditorTableView(self, None,
+            self.editor = RemoteDictEditorTreeView(self, None,
                             truncate=truncate, inplace=inplace, minmax=minmax,
                             collvalue=collvalue, remote_editing=remote_editing,
                             get_value_func=self.get_value,
