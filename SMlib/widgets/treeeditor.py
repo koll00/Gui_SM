@@ -32,7 +32,10 @@ from SMlib.widgets.dicteditorutils import (sort_against, get_size,
                unsorted_unique, try_to_eval, datestr_to_datetime,
                get_numpy_dtype, is_editable_type)
 from SMlib.widgets.importwizard import ImportWizard
-from SMlib.widgets.dicteditor import display_to_value
+if ndarray is not FakeObject:
+    from SMlib.widgets.arrayeditor import ArrayEditor
+from SMlib.widgets.texteditor import TextEditor
+from SMlib.widgets.dicteditor import (display_to_value, DictEditor)
 
 class ProxyObject(object):
     """Dictionary proxy to an unknown object"""
@@ -160,9 +163,36 @@ class ReadOnlyTreeModel(QAbstractItemModel):
 
         if role != Qt.DisplayRole and role != Qt.EditRole:
             return None
-
+        
         item = self.getItem(index)
-        return item.data(index.column())
+        value = item.data(index.column())
+        
+        display = value_to_display(value,
+                               truncate=index.column() == 3 and self.truncate,
+                               minmax=self.minmax,
+                               collvalue=self.collvalue or index.column() != 3)
+        if role == Qt.DisplayRole:
+            return to_qvariant(display)
+        elif role == Qt.EditRole:
+            return to_qvariant(value_to_display(value))
+        elif role == Qt.TextAlignmentRole:
+            if index.column() == 3:
+                if len(display.splitlines()) < 3:
+                    return to_qvariant(int(Qt.AlignLeft|Qt.AlignVCenter))
+                else:
+                    return to_qvariant(int(Qt.AlignLeft|Qt.AlignTop))
+            else:
+                return to_qvariant(int(Qt.AlignLeft|Qt.AlignVCenter))
+        elif role == Qt.BackgroundColorRole:
+            print index.row(), index.column()
+            return to_qvariant( self.get_bgcolor(index) )
+        elif role == Qt.FontRole:
+            if index.column() < 3:
+                return to_qvariant(get_font('dicteditor_header'))
+            else:
+                return to_qvariant(get_font('dicteditor'))
+            
+
 
     def flags(self, index):
         if not index.isValid():
@@ -179,6 +209,11 @@ class ReadOnlyTreeModel(QAbstractItemModel):
         return self.rootItem
 
     def headerData(self, section, orientation, role= Qt.DisplayRole):
+        if role != Qt.DisplayRole:
+            if role == Qt.FontRole:
+                return to_qvariant(get_font('dicteditor_header'))
+            else:
+                return to_qvariant()
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.rootItem.data(section)
 
@@ -288,6 +323,26 @@ class ReadOnlyTreeModel(QAbstractItemModel):
                 
         self.reset()
     
+    ##
+    def get_bgcolor(self, index):
+        """Background color depending on value"""
+        if index.column() == 0:
+            color = QColor(Qt.lightGray)
+            color.setAlphaF(.05)
+        elif index.column() < 3:
+            color = QColor(Qt.lightGray)
+            color.setAlphaF(.2)
+        else:
+            color = QColor(Qt.lightGray)
+            color.setAlphaF(.3)
+        return color
+    #
+    def get_value(self, index):
+        return self.getItem(index)
+    
+    def get_key(self, index):
+        self.getItem(index).data(index.row())
+        
     #========================private function ================================================#
     def _appendChildRow(self, parent, datas):
         
@@ -348,10 +403,10 @@ class BaseTreeView(QTreeView):
         
     def setup_table(self):
         """Setup table"""
-        #self.horizontalHeader().setStretchLastSection(True)
-        #self.adjust_columns()
+        self.header().setStretchLastSection(True)
+        self.adjust_columns()
         # Sorting columns
-        #self.setSortingEnabled(True)
+        self.setSortingEnabled(True)
         self.sortByColumn(0, Qt.AscendingOrder)
     
     def setup_menu(self, truncate, minmax, inplace, collvalue):
@@ -531,7 +586,6 @@ class BaseTreeView(QTreeView):
     def set_data(self, data):
         """Set table data"""
         if data is not None:
-            print " in view",data 
             self.model.set_data(data, self.dictfilter)
             #self.sortByColumn(0, Qt.AscendingOrder)
 
@@ -777,6 +831,134 @@ class BaseTreeView(QTreeView):
             QMessageBox.warning(self, _( "Empty clipboard"),
                                 _("Nothing to be imported from clipboard."))
             
+
+
+class DictDelegate(QItemDelegate):
+    """DictEditor Item Delegate"""
+    def __init__(self, parent=None, inplace=False):
+        QItemDelegate.__init__(self, parent)
+        self.inplace = inplace
+        self._editors = {} # keep references on opened editors
+        
+    def get_value(self, index):
+        if index.isValid():
+            return index.model().get_value(index)
+    
+    def set_value(self, index, value):
+        if index.isValid():
+            index.model().set_value(index, value)
+
+    def createEditor(self, parent, option, index):
+        """Overriding method createEditor"""
+        if index.column() < 3:
+            return None
+        try:
+            value = self.get_value(index)
+        except Exception, msg:
+            QMessageBox.critical(self.parent(), _("Edit item"),
+                                 _("<b>Unable to retrieve data.</b>"
+                                   "<br><br>Error message:<br>%s"
+                                   ) % unicode(msg))
+            return
+        key = index.model().get_key(index)
+        readonly = isinstance(value, tuple) or self.parent().readonly \
+                   or not is_known_type(value)
+        #---editor = DictEditor
+        if isinstance(value, (list, tuple, dict)) and not self.inplace:
+            editor = DictEditor()
+            editor.setup(value, key, icon=self.parent().windowIcon(),
+                         readonly=readonly)
+            self.create_dialog(editor, dict(model=index.model(), editor=editor,
+                                            key=key, readonly=readonly))
+            return None
+        #---editor = ArrayEditor
+        elif isinstance(value, (ndarray, MaskedArray))\
+             and ndarray is not FakeObject and not self.inplace:
+            if value.size == 0:
+                return None
+            editor = ArrayEditor(parent)
+            if not editor.setup_and_check(value, title=key, readonly=readonly):
+                return
+            self.create_dialog(editor, dict(model=index.model(), editor=editor,
+                                            key=key, readonly=readonly))
+            return None
+        #---showing image
+        elif isinstance(value, Image) and ndarray is not FakeObject \
+             and Image is not FakeObject:
+            arr = array(value)
+            if arr.size == 0:
+                return None
+            editor = ArrayEditor(parent)
+            if not editor.setup_and_check(arr, title=key, readonly=readonly):
+                return
+            conv_func = lambda arr: Image.fromarray(arr, mode=value.mode)
+            self.create_dialog(editor, dict(model=index.model(), editor=editor,
+                                            key=key, readonly=readonly,
+                                            conv=conv_func))
+            return None
+        #---editor = QDateTimeEdit
+        elif isinstance(value, datetime.datetime) and not self.inplace:
+            editor = QDateTimeEdit(value, parent)
+            editor.setCalendarPopup(True)
+            editor.setFont(get_font('dicteditor'))
+            self.connect(editor, SIGNAL("returnPressed()"),
+                         self.commitAndCloseEditor)
+            return editor
+        #---editor = QDateEdit
+        elif isinstance(value, datetime.date) and not self.inplace:
+            editor = QDateEdit(value, parent)
+            editor.setCalendarPopup(True)
+            editor.setFont(get_font('dicteditor'))
+            self.connect(editor, SIGNAL("returnPressed()"),
+                         self.commitAndCloseEditor)
+            return editor
+        #---editor = QTextEdit
+        elif isinstance(value, (str, unicode)) and len(value)>40:
+            editor = TextEditor(value, key)
+            self.create_dialog(editor, dict(model=index.model(), editor=editor,
+                                            key=key, readonly=readonly))
+            return None
+        #---editor = QLineEdit
+        elif self.inplace or is_editable_type(value):
+            editor = QLineEdit(parent)
+            editor.setFont(get_font('dicteditor'))
+            editor.setAlignment(Qt.AlignLeft)
+            self.connect(editor, SIGNAL("returnPressed()"),
+                         self.commitAndCloseEditor)
+            return editor
+        #---editor = DictEditor for an arbitrary object
+        else:
+            editor = DictEditor()
+            editor.setup(value, key, icon=self.parent().windowIcon(),
+                         readonly=readonly)
+            self.create_dialog(editor, dict(model=index.model(), editor=editor,
+                                            key=key, readonly=readonly))
+            return None
+        
+    def commitAndCloseEditor(self):
+        """Overriding method commitAndCloseEditor"""
+        editor = self.sender()
+        self.emit(SIGNAL("commitData(QWidget*)"), editor)
+        self.emit(SIGNAL("closeEditor(QWidget*)"), editor)
+
+class RemoteDictDelegate(DictDelegate):
+    """DictEditor Item Delegate"""
+    def __init__(self, parent=None, inplace=False,
+                 get_value_func=None, set_value_func=None):
+        DictDelegate.__init__(self, parent, inplace=inplace)
+        self.get_value_func = get_value_func
+        self.set_value_func = set_value_func
+        
+    def get_value(self, index):
+        if index.isValid():
+            name = index.model().get_key(index)
+            return self.get_value_func(name)
+    
+    def set_value(self, index, value):
+        if index.isValid():
+            name = index.model().keys[index.row()]
+            self.set_value_func(name, value)
+
 class RemoteDictEditorTreeView(BaseTreeView):
     """DictEditor table view"""
     def __init__(self, parent, data, truncate=True, minmax=False,
@@ -824,11 +1006,11 @@ class RemoteDictEditorTreeView(BaseTreeView):
                                truncate=truncate, minmax=minmax,
                                collvalue=collvalue, remote=True)
         self.setModel(self.model)
-        """
+        
         self.delegate = RemoteDictDelegate(self, inplace,
                                            get_value_func, set_value_func)
         self.setItemDelegate(self.delegate)
-        """
+        
         
         self.setup_table()
         self.menu = self.setup_menu(truncate, minmax, inplace, collvalue,
