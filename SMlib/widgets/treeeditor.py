@@ -140,7 +140,7 @@ class ReadOnlyTreeModel(QAbstractItemModel):
         self.minmax = minmax
         self.collvalue = collvalue
         self.remote = remote
-        rootData = ["name", "size", "type", "view"]
+        rootData = ["name", "type", "size", "view"]
         
         self.rootItem = TreeItem(rootData)
         self.data = None
@@ -341,7 +341,7 @@ class ReadOnlyTreeModel(QAbstractItemModel):
         return self.getItem(index)
     
     def get_key(self, index):
-        self.getItem(index).data(index.row())
+        return self.getItem(index).data(0)
         
     #========================private function ================================================#
     def _appendChildRow(self, parent, datas):
@@ -374,8 +374,23 @@ class ReadOnlyTreeModel(QAbstractItemModel):
         item.setData(3, _view)
         
         return item
-    
     #========================private function ================================================#
+    
+class DictModel(ReadOnlyTreeModel):
+    """DictEditor Tree Model"""
+    
+    def set_value(self, index, value):
+        """Set value"""
+        """
+        self._data[ self.keys[index.row()] ] = value
+        self.showndata[ self.keys[index.row()] ] = value
+        self.sizes[index.row()] = get_size(value)
+        self.types[index.row()] = get_human_readable_type(value)
+        """
+        print "before", self.model().get_value(index).data[3]
+        self.model().get_value(index).setData(3, value)
+        print "after", self.model().get_value(index).data[3]
+
 class BaseTreeView(QTreeView):
     """Base dictionnary editor table view"""
     sig_option_changed = pyqtSignal(str, object)
@@ -941,6 +956,53 @@ class DictDelegate(QItemDelegate):
         self.emit(SIGNAL("commitData(QWidget*)"), editor)
         self.emit(SIGNAL("closeEditor(QWidget*)"), editor)
 
+    def setEditorData(self, editor, index):
+        """Overriding method setEditorData
+        Model --> Editor"""
+        value = self.get_value(index)
+        if isinstance(editor, QLineEdit):
+            if not isinstance(value, basestring):
+                value = repr(value)
+            editor.setText(value)
+        elif isinstance(editor, QDateEdit):
+            editor.setDate(value)
+        elif isinstance(editor, QDateTimeEdit):
+            editor.setDateTime(QDateTime(value.date(), value.time()))
+            
+    def setModelData(self, editor, model, index):
+        """Overriding method setModelData
+        Editor --> Model"""
+        if not hasattr(model, "set_value"):
+            # Read-only mode
+            return
+        if isinstance(editor, QLineEdit):
+            value = editor.text()
+            try:
+                value = display_to_value(to_qvariant(value),
+                                         self.get_value(index),
+                                         ignore_errors=False)
+            except Exception, msg:
+                raise
+                QMessageBox.critical(editor, _("Edit item"),
+                                     _("<b>Unable to assign data to item.</b>"
+                                       "<br><br>Error message:<br>%s"
+                                       ) % str(msg))
+                return
+        elif isinstance(editor, QDateEdit):
+            qdate = editor.date()
+            value = datetime.date( qdate.year(), qdate.month(), qdate.day() )
+        elif isinstance(editor, QDateTimeEdit):
+            qdatetime = editor.dateTime()
+            qdate = qdatetime.date()
+            qtime = qdatetime.time()
+            value = datetime.datetime( qdate.year(), qdate.month(),
+                                       qdate.day(), qtime.hour(),
+                                       qtime.minute(), qtime.second() )
+        else:
+            # Should not happen...
+            raise RuntimeError("Unsupported editor widget")
+        self.set_value(index, value)
+        
 class RemoteDictDelegate(DictDelegate):
     """DictEditor Item Delegate"""
     def __init__(self, parent=None, inplace=False,
@@ -956,7 +1018,7 @@ class RemoteDictDelegate(DictDelegate):
     
     def set_value(self, index, value):
         if index.isValid():
-            name = index.model().keys[index.row()]
+            name = index.model().get_key(index)
             self.set_value_func(name, value)
 
 class RemoteDictEditorTreeView(BaseTreeView):
@@ -996,7 +1058,7 @@ class RemoteDictEditorTreeView(BaseTreeView):
         self.readonly = False
 
 #        print parent.shellwidget.locals()
-        """
+        
         self.model = DictModel(self, data, names=True,
                                truncate=truncate, minmax=minmax,
                                collvalue=collvalue, remote=True)
@@ -1005,6 +1067,7 @@ class RemoteDictEditorTreeView(BaseTreeView):
         self.model = ReadOnlyTreeModel(self, data, names=True,
                                truncate=truncate, minmax=minmax,
                                collvalue=collvalue, remote=True)
+                               """
         self.setModel(self.model)
         
         self.delegate = RemoteDictDelegate(self, inplace,
