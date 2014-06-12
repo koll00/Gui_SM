@@ -124,9 +124,7 @@ class TreeItem(object):
     def setData(self, column, value):
         if column < 0 or column >= len(self.itemData):
             return False
-
         self.itemData[column] = value
-
         return True
 
 
@@ -140,7 +138,7 @@ class ReadOnlyTreeModel(QAbstractItemModel):
         self.minmax = minmax
         self.collvalue = collvalue
         self.remote = remote
-        rootData = ["name", "type", "size", "view"]
+        rootData = [_("name"), _("type"), _("size"), _("view")]
         
         self.rootItem = TreeItem(rootData)
         self.data = None
@@ -160,7 +158,7 @@ class ReadOnlyTreeModel(QAbstractItemModel):
     def data(self, index, role):
         if not index.isValid():
             return None
-
+        
         if role != Qt.DisplayRole and role != Qt.EditRole:
             return None
         
@@ -338,7 +336,35 @@ class ReadOnlyTreeModel(QAbstractItemModel):
         return color
     #
     def get_value(self, index):
-        return self.getItem(index)
+        if index.column() == 3 :
+            return self._getView(index)
+        else:
+            return self.getItem(index).data(index.column())
+        
+    def _getView(self, index):
+        
+        item = self.getItem(index)
+        parent = item.parent()
+        
+        parentList = [item]
+        while parent != self.rootItem:
+            parentList.append(parent)
+            parent = parent.parent()
+            
+        root = parentList.pop()
+        data = self.get_data().get(root.data(0)).get('value')
+        
+        name = root.data(0)
+        
+        while len(parentList) != 0:
+            parent = parentList.pop()
+            if isinstance(data, dict):
+                data = data.get(parent.data(0))
+            elif isinstance(data,(int, str, float)):
+                data = data
+            elif isinstance(data, (tuple, list)):
+                data = data[int(parent.data(0)[1:-1])]
+        return data
     
     def get_key(self, index):
         return self.getItem(index).data(0)
@@ -351,7 +377,7 @@ class ReadOnlyTreeModel(QAbstractItemModel):
                 value = datas[index]
                 display = value_to_display(value, truncate= self.truncate, 
                                            minmax=self.minmax, collvalue=self.collvalue )
-                pre_parent = self._appendRow(parent, str(index), get_human_readable_type(value),
+                pre_parent = self._appendRow(parent, index, get_human_readable_type(value),
                                              get_size(value), display)
                 if isinstance(value, (dict, list, tuple)):
                     self._appendChildRow(pre_parent, value)
@@ -382,15 +408,74 @@ class DictModel(ReadOnlyTreeModel):
     def set_value(self, index, value):
         """Set value"""
         """
-        self._data[ self.keys[index.row()] ] = value
-        self.showndata[ self.keys[index.row()] ] = value
-        self.sizes[index.row()] = get_size(value)
-        self.types[index.row()] = get_human_readable_type(value)
-        """
-        print "before", self.model().get_value(index).data[3]
-        self.model().get_value(index).setData(3, value)
-        print "after", self.model().get_value(index).data[3]
+        item = self.getItem(index)
+        parent = item.parent()
+        self.getItem(index).setData(3, value)
+        parentList = [self.getItem(index)]
+        while parent != self.rootItem:
+            print parent.data(3)
+            parentList.append(parent)
+            parent = parent.parent()
+        
+        source = self.get_data().get(parentList[-1].data(0)).get('value')
+        root = parentList.pop()
+        name = root.data(0)
 
+        if isinstance(source, dict):
+            newData = self._toData(value, parentList, source)
+            print type(newData), newData
+        elif isinstance(source, (int, float, str)):
+            newData = value
+        
+        self.set_value_func(name, newData)
+        #self.get_data()[parent.data(0)]
+    def _toData(self, value, parentList, data):
+        def update(value, parent, data):
+            newData = data
+            if isinstance(newData, dict):
+                dValue = {parent.data(0): value}
+                newData.update(dValue)
+            elif isinstance(newData, (list, tuple)):
+                newData[int(parent.data(0)[1:-1])] = value
+            elif isinstance(newData, (int, float, str)):
+                newData = value
+            return newData
+        
+        def getChildData(child, data):
+            if isinstance(data, dict):
+                return data.get(child.data(0))
+            elif isinstance(data, (list, tuple)):
+                ch = child.data(0)[1:-1]
+                return data[int(ch)]
+            else:
+                return data
+            
+        if len(parentList) == 1:
+            p = parentList.pop()
+            newData = update(value, p, data)
+            return newData
+        else :
+            p = parentList.pop()
+            child = getChildData(p, data)
+            newData = update(value, p, self._toData(value, parentList, child))
+            return newData
+        """
+        pass
+        
+    def get_bgcolor(self, index):
+        """Background color depending on value"""
+        value = self.get_value(index)
+        if index.column() < 3:
+            color = ReadOnlyTreeModel.get_bgcolor(self, index)
+        else:
+            if self.remote:
+                color_name = value['color']
+            else:
+                color_name = get_color_name(value)
+            color = QColor(color_name)
+            color.setAlphaF(.2)
+        return color
+    
 class BaseTreeView(QTreeView):
     """Base dictionnary editor table view"""
     sig_option_changed = pyqtSignal(str, object)
@@ -423,7 +508,7 @@ class BaseTreeView(QTreeView):
         # Sorting columns
         self.setSortingEnabled(True)
         self.sortByColumn(0, Qt.AscendingOrder)
-    
+        
     def setup_menu(self, truncate, minmax, inplace, collvalue):
         """Setup context menu"""
         if self.truncate_action is not None:
@@ -680,6 +765,7 @@ class BaseTreeView(QTreeView):
     
     def remove_item(self):
         """Remove item"""
+        """Bug: These is a bug of selection. We needs to select single item"""
         indexes = self.selectedIndexes()
         if not indexes:
             return
@@ -692,8 +778,9 @@ class BaseTreeView(QTreeView):
                                       one if len(indexes) == 1 else more,
                                       QMessageBox.Yes | QMessageBox.No)
         if answer == QMessageBox.Yes:
-            idx_rows = unsorted_unique(map(lambda idx: idx.row(), indexes))
-            keys = [ self.model.keys[idx_row] for idx_row in idx_rows ]
+            #idx_rows = unsorted_unique(map(lambda idx: idx.row(), indexes))
+            #keys = [ self.model.keys[idx_row] for idx_row in idx_rows ]
+            keys = [ self.model.get_key(idx) for idx in indexes]
             self.remove_values(keys)
 
     def copy_item(self, erase_original=False):
@@ -817,10 +904,9 @@ class BaseTreeView(QTreeView):
         """Copy text to clipboard"""
         clipboard = QApplication.clipboard()
         clipl = []
-        for idx in self.selectedIndexes():
-            if not idx.isValid():
-                continue
-            clipl.append(unicode(self.delegate.get_value(idx)))
+        index = self.currentIndex()
+        if index.isValid():
+            clipl.append(unicode(self.delegate.get_value(index)))
         clipboard.setText(u'\n'.join(clipl))
     
     def import_from_string(self, text, title=None):
@@ -1011,16 +1097,71 @@ class RemoteDictDelegate(DictDelegate):
         self.get_value_func = get_value_func
         self.set_value_func = set_value_func
         
+    """
     def get_value(self, index):
         if index.isValid():
-            name = index.model().get_key(index)
-            return self.get_value_func(name)
+            value = index.model().value(index)
+            print value, index.row(), index.column()
+            return value
+    """
     
     def set_value(self, index, value):
         if index.isValid():
-            name = index.model().get_key(index)
-            self.set_value_func(name, value)
-
+            item = index.model().getItem(index)
+            parent = item.parent()
+            item.setData(3, value)
+            parentList = [item]
+            while parent != index.model().rootItem:
+                parentList.append(parent)
+                parent = parent.parent()
+            
+            source = index.model().get_data().get(parentList[-1].data(0)).get('value')
+            root = parentList.pop()
+            name = root.data(0)
+    
+            if isinstance(source, (dict,list)):
+                newData = self._toData(value, parentList, source)
+            elif isinstance(source, (int, float, str)):
+                newData = value
+            
+            self.set_value_func(name, newData)
+            #self.get_data()[parent.data(0)]
+            
+    def _toData(self, value, parentList, data):
+        def update(value, parent, data):
+            newData = data
+            if isinstance(newData, dict):
+                updateValue = {parent.data(0): value}
+                newData.update(updateValue)
+            elif isinstance(newData, (list, tuple)):
+                newData[int(parent.data(0)[1:-1])] = value
+            elif isinstance(newData, (int, float, str)):
+                newData = value
+            return newData
+        
+        def getChildData(child, data):
+            if isinstance(data, dict):
+                return data.get(child.data(0))
+            elif isinstance(data, (list, tuple)):
+                ch = child.data(0)[1:-1]
+                return data[int(ch)]
+            else:
+                return data
+            
+        if len(parentList) == 1:
+            p = parentList.pop()
+            newData = update(value, p, data)
+            return newData
+        else :
+            p = parentList.pop()
+            child = getChildData(p, data)
+            childData = self._toData(value, parentList, child)
+            newData = update(childData, p, data)
+            return newData
+            
+            
+            #self.set_value_func(name, value)
+    
 class RemoteDictEditorTreeView(BaseTreeView):
     """DictEditor table view"""
     def __init__(self, parent, data, truncate=True, minmax=False,
