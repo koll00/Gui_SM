@@ -33,3 +33,8 @@ note is left for later!!!!!!
 
 	For <type 'instance'>, we can isinstance(obj, types.InstanceType)
 ==========================================================================================================================================
+
+2014.06.13 ===============================================================================================================================
+Bug:
+	In variable explorer ,if the variable is upper characters which are more than ONE . it can not be showed.
+	At the same time, there is the same problem in spyder.
