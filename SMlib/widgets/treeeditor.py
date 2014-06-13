@@ -1158,6 +1158,8 @@ class RemoteDictDelegate(DictDelegate):
             p = parentList.pop()
             newData = update(value, p, data)
             return newData
+        elif len(parentList) == 0:
+            return value
         else :
             p = parentList.pop()
             child = getChildData(p, data)
