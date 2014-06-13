@@ -318,7 +318,8 @@ class ReadOnlyTreeModel(QAbstractItemModel):
                                 data[index]["view"])
                 if data[index]['type'] == "dict" or data[index]['type'] == "list":
                     self._appendChildRow(pre_parent, data[index]['value'])
-                
+            
+
         self.reset()
     
     ##
@@ -356,6 +357,13 @@ class ReadOnlyTreeModel(QAbstractItemModel):
         
         name = root.data(0)
         
+        return self._get_data(parentList, data)
+    
+    def get_key(self, index):
+        return self.getItem(index).data(0)
+        
+    #========================private function ================================================#
+    def _get_data(self, parentList, data):
         while len(parentList) != 0:
             parent = parentList.pop()
             if isinstance(data, dict):
@@ -366,10 +374,6 @@ class ReadOnlyTreeModel(QAbstractItemModel):
                 data = data[int(parent.data(0)[1:-1])]
         return data
     
-    def get_key(self, index):
-        return self.getItem(index).data(0)
-        
-    #========================private function ================================================#
     def _appendChildRow(self, parent, datas):
         
         if isinstance(datas, dict):
@@ -407,13 +411,12 @@ class DictModel(ReadOnlyTreeModel):
     
     def set_value(self, index, value):
         """Set value"""
-        """
+        
         item = self.getItem(index)
         parent = item.parent()
         self.getItem(index).setData(3, value)
         parentList = [self.getItem(index)]
         while parent != self.rootItem:
-            print parent.data(3)
             parentList.append(parent)
             parent = parent.parent()
         
@@ -423,7 +426,6 @@ class DictModel(ReadOnlyTreeModel):
 
         if isinstance(source, dict):
             newData = self._toData(value, parentList, source)
-            print type(newData), newData
         elif isinstance(source, (int, float, str)):
             newData = value
         
@@ -459,8 +461,6 @@ class DictModel(ReadOnlyTreeModel):
             child = getChildData(p, data)
             newData = update(value, p, self._toData(value, parentList, child))
             return newData
-        """
-        pass
         
     def get_bgcolor(self, index):
         """Background color depending on value"""
@@ -1097,14 +1097,21 @@ class RemoteDictDelegate(DictDelegate):
         self.get_value_func = get_value_func
         self.set_value_func = set_value_func
         
-    """
+    
     def get_value(self, index):
         if index.isValid():
-            value = index.model().value(index)
-            print value, index.row(), index.column()
-            return value
-    """
-    
+            item = index.model().getItem(index)
+            parent = item.parent()
+            parentList = [item]
+            while parent != index.model().rootItem:
+                parentList.append(parent)
+                parent = parent.parent()
+            root = parentList.pop()
+            name = root.data(0)
+            value = self.get_value_func(name)
+            itemData = index.model()._get_data(parentList, value)
+            return itemData
+            
     def set_value(self, index, value):
         if index.isValid():
             item = index.model().getItem(index)
@@ -1125,7 +1132,6 @@ class RemoteDictDelegate(DictDelegate):
                 newData = value
             
             self.set_value_func(name, newData)
-            #self.get_data()[parent.data(0)]
             
     def _toData(self, value, parentList, data):
         def update(value, parent, data):
@@ -1158,9 +1164,6 @@ class RemoteDictDelegate(DictDelegate):
             childData = self._toData(value, parentList, child)
             newData = update(childData, p, data)
             return newData
-            
-            
-            #self.set_value_func(name, value)
     
 class RemoteDictEditorTreeView(BaseTreeView):
     """DictEditor table view"""
@@ -1198,7 +1201,6 @@ class RemoteDictEditorTreeView(BaseTreeView):
         self.delegate = None
         self.readonly = False
 
-#        print parent.shellwidget.locals()
         
         self.model = DictModel(self, data, names=True,
                                truncate=truncate, minmax=minmax,
