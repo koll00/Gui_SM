@@ -37,6 +37,33 @@ if ndarray is not FakeObject:
 from SMlib.widgets.texteditor import TextEditor
 from SMlib.widgets.dicteditor import (display_to_value, DictEditor)
 
+def delete(parent, data):
+    newData = data
+    if isinstance(newData, dict):
+        del newData[parent.data(0)]
+    elif isinstance(newData, (list, tuple)):
+        del newData[int(parent.data(0)[1:-1])]
+    return newData
+
+def update(value, parent, data):
+    newData = data
+    if isinstance(newData, dict):
+        updateValue = {parent.data(0): value}
+        newData.update(updateValue)
+    elif isinstance(newData, (list, tuple)):
+        newData[int(parent.data(0)[1:-1])] = value
+    elif isinstance(newData, (int, float, str)):
+        newData = value
+    return newData
+
+def getChildData(child, data):
+    if isinstance(data, dict):
+        return data.get(child.data(0))
+    elif isinstance(data, (list, tuple)):
+        ch = child.data(0)[1:-1]
+        return data[int(ch)]
+    else:
+        return data
 class ProxyObject(object):
     """Dictionary proxy to an unknown object"""
     def __init__(self, obj):
@@ -343,10 +370,8 @@ class ReadOnlyTreeModel(QAbstractItemModel):
             return self.getItem(index).data(index.column())
         
     def _getView(self, index):
-        
         item = self.getItem(index)
         parent = item.parent()
-        
         parentList = [item]
         while parent != self.rootItem:
             parentList.append(parent)
@@ -354,14 +379,12 @@ class ReadOnlyTreeModel(QAbstractItemModel):
             
         root = parentList.pop()
         data = self.get_data().get(root.data(0)).get('value')
-        
-        name = root.data(0)
-        
         return self._get_data(parentList, data)
     
     def get_key(self, index):
         return self.getItem(index).data(0)
         
+    
     #========================private function ================================================#
     def _get_data(self, parentList, data):
         while len(parentList) != 0:
@@ -766,8 +789,10 @@ class BaseTreeView(QTreeView):
     def remove_item(self):
         """Remove item"""
         """Bug: These is a bug of selection. We needs to select single item"""
-        indexes = self.selectedIndexes()
-        if not indexes:
+        #indexes = self.selectedIndexes()
+        indexes = [self.currentIndex()]
+
+        if not indexes :
             return
         for index in indexes:
             if not index.isValid():
@@ -780,8 +805,41 @@ class BaseTreeView(QTreeView):
         if answer == QMessageBox.Yes:
             #idx_rows = unsorted_unique(map(lambda idx: idx.row(), indexes))
             #keys = [ self.model.keys[idx_row] for idx_row in idx_rows ]
-            keys = [ self.model.get_key(idx) for idx in indexes]
-            self.remove_values(keys)
+            #keys = [ self.model.get_key(idx) for idx in indexes]
+            keys = self.model.get_key(indexes[0])
+            def remove_values(keys, index):
+                item = index.model().getItem(index)
+                parent = item.parent()
+                parentList = [item]
+                while parent != index.model().rootItem:
+                    parentList.append(parent)
+                    parent = parent.parent()
+                name = parentList.pop().data(0)
+                data = self.delegate.get_value_func(name)
+                
+                if len(parentList) == 0:
+                    self.remove_values(keys)
+                else:
+                    data = self._deleteItem(parentList, data)
+                    self.delegate.set_value_func(name, data)
+                    
+            remove_values([keys], indexes[0])
+            
+    def _deleteItem(self, parentList, data):
+        """
+            private function:
+            delete the item in the tree child node or in the array
+        """
+        if len(parentList) == 1:
+            p = parentList.pop()
+            newData = delete(p, data)
+            return newData
+        else :
+            p = parentList.pop()
+            child = getChildData(p, data)
+            childData = self._deleteItem(parentList, child)
+            newData = update(childData, p, data)
+            return newData
 
     def copy_item(self, erase_original=False):
         """Copy item"""
@@ -826,7 +884,9 @@ class BaseTreeView(QTreeView):
                                               QLineEdit.Normal)
             if valid and unicode(key):
                 key = try_to_eval(unicode(key))
+                print "valid"
             else:
+                print "no valid"
                 return
         else:
             return
@@ -1127,32 +1187,13 @@ class RemoteDictDelegate(DictDelegate):
             name = root.data(0)
     
             if isinstance(source, (dict,list)):
-                newData = self._toData(value, parentList, source)
+                newData = self._editItem(value, parentList, source)
             elif isinstance(source, (int, float, str)):
                 newData = value
             
             self.set_value_func(name, newData)
             
-    def _toData(self, value, parentList, data):
-        def update(value, parent, data):
-            newData = data
-            if isinstance(newData, dict):
-                updateValue = {parent.data(0): value}
-                newData.update(updateValue)
-            elif isinstance(newData, (list, tuple)):
-                newData[int(parent.data(0)[1:-1])] = value
-            elif isinstance(newData, (int, float, str)):
-                newData = value
-            return newData
-        
-        def getChildData(child, data):
-            if isinstance(data, dict):
-                return data.get(child.data(0))
-            elif isinstance(data, (list, tuple)):
-                ch = child.data(0)[1:-1]
-                return data[int(ch)]
-            else:
-                return data
+    def _editItem(self, value, parentList, data):
             
         if len(parentList) == 1:
             p = parentList.pop()
@@ -1163,7 +1204,7 @@ class RemoteDictDelegate(DictDelegate):
         else :
             p = parentList.pop()
             child = getChildData(p, data)
-            childData = self._toData(value, parentList, child)
+            childData = self._editItem(value, parentList, child)
             newData = update(childData, p, data)
             return newData
     
