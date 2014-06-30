@@ -1,0 +1,235 @@
+body {
+    background-color: white;
+    color: black;
+    margin: 0px 20px 15px 20px;
+}
+
+/* --- Title style --- */
+div.title h1 {
+    font-size: 180%;
+    font-family: 'Trebuchet MS', sans-serif;
+    background-color: #6487DC;
+    background-image: -webkit-gradient(
+        linear,
+        left bottom,
+        left top,
+        color-stop(0, #6487DC),
+        color-stop(1, #666EDC)
+    );
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.45);
+    font-weight: normal;
+    padding: 6px 0px 6px 20px;
+    margin: 0px -20px;
+    color: #FFFFFF;
+}
+
+/*
+ * The next two styles are needed to
+ * modify the anchors present on the
+ * title of pages like scipy.stats or
+ * scipy.io
+ */
+div.title h1 a {
+    color: transparent;
+    cursor: default;
+}
+
+div.title h1 tt {
+    font-size: 95%;
+    background-color: transparent;
+    color: #FFFFFF;
+}
+
+
+/* --- Metadata style --- */
+div.metadata {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    margin-right: 1px;
+    padding: 1px;
+    background-color: #EEEEEE;
+    border: 1px solid #C9C9C9;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    box-shadow: 1px 1px 7px #CACACA;
+    color: #333333;
+}
+
+div.metadata p {
+    margin: 7px 0px 7px 10px;
+}
+
+span.def {
+    font-family: monospace;
+}
+
+span.argspec-highlight {
+    color: red;
+    font-size: 110%;
+    font-weight: 900;
+}
+
+/* --- Docstring div style --- */
+div.docstring {
+    margin-top: -1px;
+}
+
+div.docstring p {
+    padding: 0px 10px 0px;
+}
+
+/* --- Headers style --- */
+div.section {
+    margin: 20px 0px 0px 0px;
+}
+
+div.section h2 {
+    font-size: 140%;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-weight: normal;
+    background-color: #F2F2F2;
+    border: 1px solid #CCC;
+    color: #20435C;
+    padding: 4px 0px 4px 8px;
+}
+
+div.section h3 {
+    font-size: 110%;
+    padding: 0px 5px 0px;
+}
+
+dl.docutils {
+    padding: 0px 10px 0px;
+}
+
+div.section p {
+    padding: 0px 10px 0px;
+}
+
+#parameters h2, #returns h2, #raises h2 {
+    background-color: #EDE;
+    border: 1px solid #AAA !important;
+    color: #06C;
+}
+
+#see-also h2 {
+    background-color: #ffc;
+    border: transparent;
+    color: black;
+    /*margin-top: 4px;*/
+    margin: 4px 0px 0px 0px;
+    padding: 0px 0px 0px 8px;
+}
+
+#see-also {
+    background-color: #ffc;
+    color: black;
+    padding: 1px;
+    border: 1px solid #FF6 !important;
+}
+
+#warning {
+    margin-top: 5px;
+    background-color: #FFE4E4;
+    border: 1px solid #F66;
+    padding: 4px 8px 4px 8px;
+    text-align: center;
+}
+
+/* --- Lists style --- */
+li p span {
+    position: relative;
+    left: -9px;
+}
+
+ol.arabic {
+    margin-left: -8px;
+}
+
+/* --- Literal blocks style --- */
+pre.literal-block {
+    padding-left: 35px;
+    font-size: 95%;
+}
+
+/* --- Docutils table style --- */
+table.docutils {
+    border-collapse: collapse;
+    border-spacing: 0;
+    border: #DDDDDD;
+    margin-left: 15px;
+    margin-bottom: 10px;
+    width: 92%;
+}
+
+table.docutils td {
+    padding: 5px;
+}
+
+/* --- Docutils table headers --- */
+table.docutils th {
+    background-color: #EEEEEE;
+    border-bottom-color: #DDDDDD;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-top-color: #DDDDDD;
+    border-top-style: solid;
+    border-top-width: 1px;
+    font-weight: bold;
+    text-align: center;
+    padding: 6px 0px 6px 8px;
+    color: navy;
+}
+
+/* --- Field-list table style --- */
+table.docutils.field-list {
+    font-size: 80%;
+    border-collapse: collapse;
+    border-left: transparent;
+    border-right: transparent;
+    margin-top: 15px;
+    margin-left: 40px;
+    width: 83%;
+}
+
+/* --- Field-list table headers --- */
+table.docutils.field-list th {
+    background-color: transparent;
+    border-top: transparent;
+    border-bottom: transparent;
+    color: black;
+    font-weight: bold;
+    text-align: left;
+    padding: 4px 0px 4px 8px;
+}
+
+/* --- Spacing around example code --- */
+div.highlight pre {
+    padding: 2px 0px 2px 0px;
+    background-color: #EFC;
+    border: 1px solid #AC9;
+    border-left: None;
+    border-right: None;
+}
+
+div.highlight {
+    padding: 0px 10px 0px;
+}
+
+dt {
+    font-weight: bold;
+    /*font-size: 16px;*/
+}
+
+.classifier {
+    /*font-size: 10pt;*/
+    font-weight: normal;
+}
+
+tt {
+    background-color: #ECF0F3;
+    font-size: 95%;
+    padding: 0px 1px;
+}
