@@ -211,7 +211,8 @@ def get_supported_types():
     If you update this list, don't forget to update doc/variablexplorer.rst
     """
     from datetime import date
-    editable_types = [int, long, float, list, dict, tuple, str, unicode, date]
+    import types
+    editable_types = [int, long, float, list, dict, tuple, str, unicode, date, types.InstanceType]
     try:
         from numpy import ndarray, matrix
         editable_types += [ndarray, matrix]

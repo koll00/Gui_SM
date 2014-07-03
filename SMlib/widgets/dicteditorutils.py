@@ -234,7 +234,12 @@ def globalsfilter(input_dict, check_all=False, filters=None,
                    (key in excluded_names) or \
                    (exclude_unsupported and \
                     not is_supported(value, check_all=check_all,
-                                     filters=filters))
+                                     filters=filters,iterate = False))
+        if key in ["typeDict", "sctypeDict", "ScalarType"]:
+            excluded = True
+        if key in ['g']:
+            print excluded,not is_editable_type(value), not isinstance(value, filters)
         if not excluded:
+            print "atfer", key
             output_dict[key] = value
     return output_dict
