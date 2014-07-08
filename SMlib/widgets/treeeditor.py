@@ -14,7 +14,7 @@ from PyQt4.QtGui import ( QStandardItemModel,QStandardItem, QTreeView, QMessageB
                                 QLineEdit, QVBoxLayout, QWidget, QColor,
                                 QDialog, QDateEdit, QDialogButtonBox, QMenu,
                                 QInputDialog, QDateTimeEdit, QApplication,
-                                QKeySequence)
+                                QKeySequence, QAbstractItemView)
 
 import os
 import sys
@@ -36,6 +36,7 @@ if ndarray is not FakeObject:
     from SMlib.widgets.arrayeditor import ArrayEditor
 from SMlib.widgets.texteditor import TextEditor
 from SMlib.widgets.dicteditor import (display_to_value, DictEditor)
+from SMlib.widgets.mixins import BaseEditMixin
 
 def delete(parent, data):
     newData = data
@@ -531,6 +532,7 @@ class BaseTreeView(QTreeView):
         # Sorting columns
         self.setSortingEnabled(True)
         self.sortByColumn(0, Qt.AscendingOrder)
+        self.setSelectionBehavior(QAbstractItemView.SelectItems)
         
     def setup_menu(self, truncate, minmax, inplace, collvalue):
         """Setup context menu"""
