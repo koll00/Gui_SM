@@ -533,7 +533,7 @@ class BaseTreeView(QTreeView):
         self.setSortingEnabled(True)
         self.sortByColumn(0, Qt.AscendingOrder)
         self.setSelectionBehavior(QAbstractItemView.SelectItems)
-        
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
     def setup_menu(self, truncate, minmax, inplace, collvalue):
         """Setup context menu"""
         if self.truncate_action is not None:
@@ -728,6 +728,7 @@ class BaseTreeView(QTreeView):
                 QTreeView.mousePressEvent(self, event)
         else:
             self.clearSelection()
+            self.setCurrentIndex(QModelIndex())
             event.accept()
     
     def mouseDoubleClickEvent(self, event):
@@ -790,10 +791,7 @@ class BaseTreeView(QTreeView):
     
     def remove_item(self):
         """Remove item"""
-        """Bug: These is a bug of selection. We needs to select single item"""
-        #indexes = self.selectedIndexes()
-        indexes = [self.currentIndex()]
-
+        indexes = self.selectedIndexes()
         if not indexes :
             return
         for index in indexes:
@@ -808,24 +806,26 @@ class BaseTreeView(QTreeView):
             #idx_rows = unsorted_unique(map(lambda idx: idx.row(), indexes))
             #keys = [ self.model.keys[idx_row] for idx_row in idx_rows ]
             #keys = [ self.model.get_key(idx) for idx in indexes]
-            keys = self.model.get_key(indexes[0])
-            def remove_values(keys, index):
-                item = index.model().getItem(index)
-                parent = item.parent()
-                parentList = [item]
-                while parent != index.model().rootItem:
-                    parentList.append(parent)
-                    parent = parent.parent()
-                name = parentList.pop().data(0)
-                data = self.delegate.get_value_func(name)
-                
-                if len(parentList) == 0:
-                    self.remove_values(keys)
-                else:
-                    data = self._deleteItem(parentList, data)
-                    self.delegate.set_value_func(name, data)
+            for index in indexes:
+            
+                key = self.model.get_key(index)
+                def remove_values(keys, index):
+                    item = index.model().getItem(index)
+                    parent = item.parent()
+                    parentList = [item]
+                    while parent != index.model().rootItem:
+                        parentList.append(parent)
+                        parent = parent.parent()
+                    name = parentList.pop().data(0)
+                    data = self.delegate.get_value_func(name)
                     
-            remove_values([keys], indexes[0])
+                    if len(parentList) == 0:
+                        self.remove_values(keys)
+                    else:
+                        data = self._deleteItem(parentList, data)
+                        self.delegate.set_value_func(name, data)
+                        
+                remove_values([key], index)
             
     def _deleteItem(self, parentList, data):
         """
@@ -873,10 +873,14 @@ class BaseTreeView(QTreeView):
     def insert_item(self):
         """Insert item"""
         index = self.currentIndex()
+        
         if not index.isValid():
             row = self.model.rowCount()
         else:
             row = index.row()
+        
+        print row
+        return 0
         data = self.model.get_data()
         if isinstance(data, list):
             key = row
@@ -966,9 +970,10 @@ class BaseTreeView(QTreeView):
         """Copy text to clipboard"""
         clipboard = QApplication.clipboard()
         clipl = []
-        index = self.currentIndex()
-        if index.isValid():
-            clipl.append(unicode(self.delegate.get_value(index)))
+        for idx in self.selectedIndexes():
+            if not idx.isValid():
+                continue
+            clipl.append(unicode(self.delegate.get_value(idx)))
         clipboard.setText(u'\n'.join(clipl))
     
     def import_from_string(self, text, title=None):
@@ -1149,7 +1154,8 @@ class DictDelegate(QItemDelegate):
         else:
             # Should not happen...
             raise RuntimeError("Unsupported editor widget")
-        self.set_value(index, value)
+        if value != self.get_value(index):
+            self.set_value(index, value)
         
 class RemoteDictDelegate(DictDelegate):
     """DictEditor Item Delegate"""
