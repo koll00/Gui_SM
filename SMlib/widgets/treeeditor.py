@@ -39,6 +39,9 @@ from SMlib.widgets.dicteditor import (display_to_value, DictEditor)
 from SMlib.widgets.mixins import BaseEditMixin
 
 def delete(parent, data):
+    """
+
+    """
     newData = data
     if isinstance(newData, dict):
         del newData[parent.data(0)]
@@ -46,13 +49,19 @@ def delete(parent, data):
         del newData[int(parent.data(0)[1:-1])]
     return newData
 
-def update(value, parent, data):
+def update(value, parent, data, key = None):
     newData = data
     if isinstance(newData, dict):
-        updateValue = {parent.data(0): value}
+        updateValue = {key if key else parent.data(0): value}
         newData.update(updateValue)
     elif isinstance(newData, (list, tuple)):
-        newData[int(parent.data(0)[1:-1])] = value
+        if key :
+            if key >= len(newData):
+                newData.append(value)
+            else:
+                newData.insert(key ,value)
+        else:
+            newData[int(parent.data(0)[1:-1])] = value
     elif isinstance(newData, (int, float, str)):
         newData = value
     return newData
@@ -456,6 +465,7 @@ class DictModel(ReadOnlyTreeModel):
         self.set_value_func(name, newData)
         #self.get_data()[parent.data(0)]
     def _toData(self, value, parentList, data):
+        """
         def update(value, parent, data):
             newData = data
             if isinstance(newData, dict):
@@ -466,7 +476,7 @@ class DictModel(ReadOnlyTreeModel):
             elif isinstance(newData, (int, float, str)):
                 newData = value
             return newData
-        
+        """
         def getChildData(child, data):
             if isinstance(data, dict):
                 return data.get(child.data(0))
@@ -876,31 +886,75 @@ class BaseTreeView(QTreeView):
         
         if not index.isValid():
             row = self.model.rowCount()
-        else:
-            row = index.row()
-        
-        print row
-        return 0
-        data = self.model.get_data()
-        if isinstance(data, list):
-            key = row
-            data.insert(row, '')
-        elif isinstance(data, dict):
             key, valid = QInputDialog.getText(self, _( 'Insert'), _( 'Key:'),
                                               QLineEdit.Normal)
             if valid and unicode(key):
                 key = try_to_eval(unicode(key))
-                print "valid"
             else:
-                print "no valid"
                 return
-        else:
-            return
-        value, valid = QInputDialog.getText(self, _('Insert'), _('Value:'),
+            value, valid = QInputDialog.getText(self, _('Insert'), _('Value:'),
                                             QLineEdit.Normal)
-        if valid and unicode(value):
-            self.new_value(key, try_to_eval(unicode(value)))
+        else:
+            row = index.row()
             
+        item = index.model().getItem(index)
+        parent = item.parent()
+        parentList = [item]
+        parentItem = parent
+        while parentItem != index.model().rootItem:
+            parentList.append(parentItem)
+            parentItem = parentItem.parent()
+        
+        parentData = self.delegate.get_value(index.parent())
+        if len(parentList) == 0:
+            key, valid = QInputDialog.getText(self, _( 'Insert'), _( 'Key:'),
+                                              QLineEdit.Normal)
+            if valid and unicode(key):
+                key = try_to_eval(unicode(key))
+            else:
+                return
+            value, valid = QInputDialog.getText(self, _('Insert'), _('Value:'),
+                                            QLineEdit.Normal)
+        else:
+            if isinstance(parentData, (list,tuple)):
+                key = row + 1
+            elif isinstance(parentData, dict):
+                key, valid = QInputDialog.getText(self, _( 'Insert'), _( 'Key:'),
+                                              QLineEdit.Normal)
+                if valid and unicode(key):
+                    key = try_to_eval(unicode(key))
+            else:
+                return
+            value, valid = QInputDialog.getText(self, _('Insert'), _('Value:'),
+                                            QLineEdit.Normal)
+            name = parentList.pop().data(0)
+            data = self.model.get_data().get(name).get('value')
+            if valid and unicode(value):
+                value = self._toData(value, parentList, data, key)
+                
+        if valid and unicode(value):
+            self.new_value(name, try_to_eval(unicode(value)))
+            
+    def _toData(self, value, parentList, data, key):
+        def getChildData(child, data):
+            if isinstance(data, dict):
+                return data.get(child.data(0))
+            elif isinstance(data, (list, tuple)):
+                ch = child.data(0)[1:-1]
+                return data[int(ch)]
+            else:
+                return data
+            
+        if len(parentList) == 1:
+            p = parentList.pop()
+            newData = update(value, p, data, key)
+            return newData
+        else :
+            p = parentList.pop()
+            child = getChildData(p, data)
+            newData = update(self._toData(value, parentList, child, key), p, data, p.data(0))
+            return newData
+
     def __prepare_plot(self):
         try:
             import guiqwt.pyplot #analysis:ignore
